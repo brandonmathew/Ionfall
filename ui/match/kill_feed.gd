@@ -65,6 +65,8 @@ func add_death(e: Dictionary, name_of: Callable, local_id: int) -> void:
 	var weapon: String = weapon_tag(e.weapon)
 	if e.get("environment", false):
 		weapon = "FALL"
+	if e.get("dot", false):
+		weapon = "DOT"
 	var headshot: bool = e.get("headshot", false)
 	_set_part(parts[0], "" if e.suicide else name_of.call(e.killer), _name_color(e.killer, local_id))
 	_set_part(parts[1], weapon + ("  ◎" if headshot else ""), UiStyle.WARN if headshot else UiStyle.TEXT_DIM)

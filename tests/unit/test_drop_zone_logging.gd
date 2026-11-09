@@ -33,6 +33,40 @@ func test_chunk_load_missing_scene_logs_error() -> void:
 	loader.queue_free()
 
 
+func test_chunk_load_gives_up_after_three_attempts() -> void:
+	# A broken chunk used to be retried every 0.5 s tick forever (1.0.7
+	# phone run: chunks 04/08 failed 159 times in 90 s, spamming the
+	# log and hitching frames). Now the third failure says so and the
+	# loader stops.
+	var before := Log.recent_text()
+	var loader := DropZoneChunkLoader.new()
+	loader._load_chunk(99)
+	loader._load_chunk(99)
+	loader._load_chunk(99)
+	var tail := _tail(before)
+	assert_true(tail.contains("attempt 1/3"), tail)
+	assert_true(tail.contains("attempt 2/3"), tail)
+	assert_true(tail.contains("giving up after 3 attempts"), tail)
+	assert_true(loader._given_up(99), "chunk 99 is given up after 3 failures")
+	loader.queue_free()
+
+
+func test_given_up_chunk_is_not_retried() -> void:
+	var loader := DropZoneChunkLoader.new()
+	loader.player_position_callback = func() -> Vector3: return Vector3(-300, 0, -100)  # chunk 04
+	loader._note_failure(4, "chunk 04 failed to load: test")
+	loader._note_failure(4, "chunk 04 failed to load: test")
+	loader._note_failure(4, "chunk 04 failed to load: test")
+	assert_true(loader._given_up(4), "chunk 04 given up after 3 failures")
+	var before := Log.recent_text()
+	loader._refresh()
+	var tail := _tail(before)
+	assert_false(tail.contains("chunk 04"), "given-up chunk 04 is not retried: " + tail)
+	assert_false(loader.loaded_indices().has(4), "chunk 04 stays unloaded")
+	assert_true(loader.loaded_indices().size() >= 1, "a neighbour still loads")
+	loader.queue_free()
+
+
 func test_chunked_bake_logs_total() -> void:
 	var gameplay := Maps.gameplay("drop_zone")
 	add_child(gameplay)

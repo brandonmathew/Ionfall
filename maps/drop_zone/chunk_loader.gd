@@ -16,11 +16,18 @@ extends Node
 
 const CHUNK_SCENE := "res://maps/drop_zone/chunks/chunk_%02d.tscn"
 const CHECK_SECONDS := 0.5
+## A chunk that fails this many loads is never retried this session: a
+## failed chunk is a broken asset, not a transient condition, and
+## retrying it every 0.5 s tick spams the log and hitches the frame
+## (1.0.7 phone run: chunks 04/08 failed 159 times in 90 s). The
+## district silhouette stays visible for the unloaded chunk instead.
+const MAX_LOAD_ATTEMPTS := 3
 
 ## The local player's position, or Vector3.INF while there is none.
 var player_position_callback: Callable
 
 var _loaded: Dictionary = {}  ## chunk index -> chunk root Node
+var _failed: Dictionary = {}  ## chunk index -> failed load attempts
 var _timer: Timer
 
 
@@ -129,21 +136,26 @@ func _refresh() -> void:
 			(_loaded[idx] as Node).queue_free()
 			_loaded.erase(idx)
 	for idx in wanted:
-		if not _loaded.has(idx):
+		if not _loaded.has(idx) and not _given_up(idx):
 			_load_chunk(idx)
 			break
 	_update_silhouettes()
 
 
+## True once `idx` has failed MAX_LOAD_ATTEMPTS loads this session.
+func _given_up(idx: int) -> bool:
+	return (_failed.get(idx, 0) as int) >= MAX_LOAD_ATTEMPTS
+
+
 func _load_chunk(idx: int) -> void:
 	var path := CHUNK_SCENE % idx
 	if not ResourceLoader.exists(path):
-		Log.e("map", "chunk %02d scene missing: %s (island will have a hole there)" % [idx, path])
+		_note_failure(idx, "chunk %02d scene missing: %s (island will have a hole there)" % [idx, path])
 		return
 	var t0 := Time.get_ticks_msec()
 	var scene := load(path) as PackedScene
 	if scene == null:
-		Log.e("map", "chunk %02d failed to load: %s" % [idx, path])
+		_note_failure(idx, "chunk %02d failed to load: %s" % [idx, path])
 		return
 	var chunk := scene.instantiate()
 	chunk.name = "Chunk%02d" % idx
@@ -152,7 +164,19 @@ func _load_chunk(idx: int) -> void:
 	# the new chunk to the same quality tier.
 	MapDetail.apply(chunk, "drop_zone", MeshyRig.current_tier())
 	_loaded[idx] = chunk
+	_failed.erase(idx)
 	Log.i("map", "chunk %02d loaded in %d ms (%d loaded)" % [idx, Time.get_ticks_msec() - t0, _loaded.size()])
+
+
+## Records one failed load of `idx`; the final attempt logs that the
+## loader is giving up, so a broken chunk is one error, not one per tick.
+func _note_failure(idx: int, msg: String) -> void:
+	var attempts := (_failed.get(idx, 0) as int) + 1
+	_failed[idx] = attempts
+	if attempts >= MAX_LOAD_ATTEMPTS:
+		Log.e("map", msg + " (giving up after %d attempts; silhouette stays)" % attempts)
+	else:
+		Log.e("map", msg + " (attempt %d/%d)" % [attempts, MAX_LOAD_ATTEMPTS])
 
 
 func _update_silhouettes() -> void:

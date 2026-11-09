@@ -242,6 +242,20 @@ func test_dot_fight_kills_loser() -> void:
 	assert_false(r.has_dot(d.victim), "loser leaves the dot table")
 
 
+func test_dot_death_event_is_marked_dot() -> void:
+	# The feed tells DOT fights apart from real falls by this flag; the
+	# weapon stays empty so the kill never pollutes weapon_kills.
+	var r: BotRings = BotRings.new(world, 9)
+	r.register_dot(1000, Vector3(0, 0, 0), BotBrain.Difficulty.NORMAL, "A")
+	r.register_dot(1001, Vector3(5, 0, 0), BotBrain.Difficulty.NORMAL, "B")
+	var deaths := r.tick_dots(60)
+	assert_eq(deaths.size(), 1)
+	var d: Dictionary = deaths[0]
+	assert_true(d.get("dot", false), "DOT death carries dot=true")
+	assert_eq(d.weapon, &"", "DOT death still has no weapon")
+	assert_false(d.get("environment", false), "a DOT death is not an environment death")
+
+
 func test_dot_death_event_matches_world_shape() -> void:
 	var r: BotRings = BotRings.new(world, 9)
 	r.register_dot(1000, Vector3(0, 0, 0), BotBrain.Difficulty.NORMAL, "A")

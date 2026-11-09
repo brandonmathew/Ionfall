@@ -34,3 +34,30 @@ func test_rows_expire_and_clear() -> void:
 	kf.clear()
 	for row in kf.get_children():
 		assert_false(row.visible)
+
+
+## A DOT death (two far-away bots fighting abstractly) has no weapon, so
+## it used to read as a fall: "FALL ?" in the feed, as in Brandon's
+## 1.0.7 phone run. It now reads DOT, with both names.
+func test_dot_death_shows_dot_not_fall() -> void:
+	var kf := KillFeed.new()
+	add_child_autofree(kf)
+	var name_of := func(id: int) -> String: return "[BOT] P%d" % id
+	kf.add_death({"killer": 1000, "victim": 1001, "weapon": &"", "dot": true, "suicide": false,
+			"headshot": false, "assists": []}, name_of, 0)
+	var row := kf.get_child(KillFeed.MAX_ROWS - 1).get_child(0).get_children()
+	assert_eq((row[0] as Label).text, "[BOT] P1000")
+	assert_eq((row[1] as Label).text, "DOT")
+	assert_eq((row[2] as Label).text, "[BOT] P1001")
+
+
+## A real fall (environment death, empty weapon, no dot flag) still reads
+## FALL — the DOT label must not swallow genuine falls.
+func test_environment_death_still_shows_fall() -> void:
+	var kf := KillFeed.new()
+	add_child_autofree(kf)
+	var name_of := func(id: int) -> String: return "[BOT] P%d" % id
+	kf.add_death({"killer": 0, "victim": 1001, "weapon": &"", "environment": true, "suicide": false,
+			"headshot": false, "assists": []}, name_of, 0)
+	var row := kf.get_child(KillFeed.MAX_ROWS - 1).get_child(0).get_children()
+	assert_eq((row[1] as Label).text, "FALL")

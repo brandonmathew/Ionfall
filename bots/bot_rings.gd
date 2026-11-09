@@ -269,6 +269,9 @@ func _resolve_dot_fights(tick: int) -> Array:
 ## kill feed and the wire encoding all treat it like a world death. The id
 ## is "dot:<victim>:<tick>": Protocol.write_event only needs three
 ## colon-separated parts with an integer third part (the life byte).
+## `dot` marks the death as a far-away abstract fight: the kill feed
+## shows it as DOT, not FALL (the empty weapon used to read as a fall),
+## and the weapon stays empty so it never pollutes weapon_kills.
 func _dot_death_event(victim: int, killer: int, tick: int) -> Dictionary:
 	return {
 		"id": "dot:%d:%d" % [victim, tick],
@@ -277,6 +280,7 @@ func _dot_death_event(victim: int, killer: int, tick: int) -> Dictionary:
 		"victim": victim,
 		"killer": killer,
 		"weapon": &"",
+		"dot": true,
 		"suicide": false,
 		"headshot": false,
 		"environment": false,

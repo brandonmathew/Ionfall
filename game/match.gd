@@ -40,6 +40,7 @@ var hud: Hud
 var touch := TouchControls.new()
 
 var _visuals: Dictionary = {}  ## net id -> PlayerVisual
+var _names: Dictionary = {}  ## net id -> "[BOT] Name", kept forever: a bot that left the roster (a DOT, a leaver) still needs a name in the kill feed
 var _visual_tier := MeshyRig.current_tier()  ## the character tier _visuals were built at
 var _prev: Dictionary = {}  ## host: net id -> PlayerSimState at the previous tick
 var _started: bool = false
@@ -985,10 +986,14 @@ func _roster() -> Array:
 
 
 func _display_name(id: int) -> String:
+	# Every roster sighting refreshes the cache, so a name learned
+	# while a bot was bodied survives its removal to a DOT (its DOT
+	# death would otherwise render as "?" in the kill feed).
 	for p in _roster():
+		_names[p.id] = ("[BOT] " if p.bot else "") + p.name
 		if p.id == id:
-			return ("[BOT] " if p.bot else "") + p.name
-	return "?"
+			return str(_names[p.id])
+	return str(_names.get(id, "?"))
 
 
 ## Where another player is rendered right now (Vector3.INF if unknown).
