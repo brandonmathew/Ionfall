@@ -67,6 +67,12 @@ var phase_seq: int = 0
 var phase_ends_tick: int = 0
 var clients: Dictionary = {}  ## peer id -> Client
 var bots: Dictionary = {}  ## net id -> BotBrain (or TargetDummyDriver without navigation)
+## BR Phase 1 (bots/bot_rings.gd): the distance rings for bots, or null
+## until first used. rings_enabled is set by match.gd for the BR test match
+## only, after start(); off everywhere else, where bots behave exactly as
+## before (the command loop below is untouched when disabled).
+var rings: BotRings
+var rings_enabled: bool = false
 ## Set by the owner once the map's navigation is built; bots need it.
 var bot_nav: BotNavigation
 ## Listen host / offline: the local player's id and this tick's command.
@@ -105,6 +111,12 @@ var _slow_tick_logged_ms: int = -100000
 var last_sim_usec: int = 0  ## of which world.step()
 
 var _host_events: Array[Dictionary] = []
+## BR rings: a dot's score. world.scores only tracks bodied players
+## (remove_player erases it, add_player zeroes it), so a bot's score is
+## stashed here when it demotes, DOT-fight kills are credited here, and
+## the stash is restored into world.scores when it promotes back. Only
+## ever populated through the rings; empty in every other mode.
+var _dot_scores := {}
 var _next_player_id: int = 2
 var stats := MatchStats.new()
 ## Winner of the last finished match (0 = draw), for presentation.
@@ -222,8 +234,11 @@ const BOT_NAMES := ["Kestrel", "Vanta", "Ordo", "Lumen", "Rook", "Sable", "Quill
 
 
 ## `driver`: anything with command_for(tick, player) -> PlayerCommand.
-func add_bot(bot_name: String, driver: RefCounted) -> SimPlayer:
-	var id := 1000 + _bot_seq
+## `reuse_id`: a bot returning from the DOT ring keeps its old net id (and
+## its stats line); -1 takes the next fresh id as before.
+func add_bot(bot_name: String, driver: RefCounted, reuse_id: int = -1) -> SimPlayer:
+	var id := reuse_id if reuse_id >= 1000 and not bots.has(reuse_id) and not world.players.has(reuse_id) \
+			else 1000 + _bot_seq
 	_bot_seq += 1
 	bots[id] = driver
 	var p := world.add_player(id, _loadout_for(_rng.randi_range(0, Loadouts.PRIMARIES.size() - 1)), bot_name, true)
@@ -255,6 +270,8 @@ func _unshielded(p: SimPlayer) -> SimPlayer:
 
 func remove_bot(id: int) -> void:
 	Log.d("server", "bot %d removed" % id)
+	if rings != null:
+		rings.forget_bot(id)
 	bots.erase(id)
 	world.remove_player(id)
 	stats.remove_player(id, world.tick)
@@ -307,7 +324,7 @@ func update_bot_fill() -> void:
 		_broadcast_roster()
 		return
 	var wanted := _bots_wanted()
-	while bots.size() > wanted:
+	while _bot_total() > wanted and not bots.is_empty():
 		var id: int = bots.keys().max()
 		if GameMode.is_team_mode(game_mode):
 			# Make room on the larger team.
@@ -316,10 +333,12 @@ func update_bot_fill() -> void:
 			var on_big := bots.keys().filter(func(b: int) -> bool: return world.players[b].team == big)
 			if not on_big.is_empty():
 				id = on_big.max()
+		if rings != null:
+			rings.forget_bot(id)
 		bots.erase(id)
 		world.remove_player(id)
 		stats.remove_player(id, world.tick)
-	while bots.size() < wanted:
+	while _bot_total() < wanted:
 		var bot_name: String = BOT_NAMES[_bot_seq % BOT_NAMES.size()]
 		var id := 1000 + _bot_seq
 		if bot_nav != null:
@@ -327,6 +346,14 @@ func update_bot_fill() -> void:
 		else:
 			add_bot(bot_name, TargetDummyDriver.new(_bot_seq * 50))
 	_broadcast_roster()
+
+
+## Bodied bots plus DOTs (rings only): the fighters update_bot_fill counts.
+func _bot_total() -> int:
+	var n := bots.size()
+	if rings_enabled and rings != null:
+		n += rings.dot_count()
+	return n
 
 
 ## How many bots the match should have now: bot_count beside the humans
@@ -390,6 +417,20 @@ func roster() -> Array:
 		out.append({"id": id, "name": p.display_name, "bot": p.is_bot, "character": p.character, "color": p.color,
 				"score": world.scores.get(id, 0), "team": p.team if GameMode.is_team_mode(game_mode) else GameMode.NO_TEAM,
 				"kills": l.kills if l else 0, "deaths": l.deaths if l else 0, "assists": l.assists if l else 0})
+	# BR rings: dots are still fighters, but they have no body in the
+	# world — without a roster row the kill feed (match.gd _display_name,
+	# which only knows the roster) shows them as "?". Their score comes
+	# from _dot_scores, their kills/deaths from their stats line.
+	if rings != null:
+		var dot_ids := rings.dot_ids()
+		dot_ids.sort()
+		for id in dot_ids:
+			var info: Dictionary = rings.dot_info(id)
+			var l: MatchStats.Line = stats.lines.get(id)
+			out.append({"id": id, "name": String(info.get("name", l.name if l != null else "?")), "bot": true,
+					"character": 0, "color": 0, "score": int(_dot_scores.get(id, 0)),
+					"team": GameMode.NO_TEAM, "kills": l.kills if l else 0, "deaths": l.deaths if l else 0,
+					"assists": l.assists if l else 0})
 	return out
 
 
@@ -410,26 +451,29 @@ func _physics_process(_delta: float) -> void:
 				stalled[c.player_id] = true
 	if local_player_id != 0 and local_command != null:
 		commands[local_player_id] = local_command
+	if rings_enabled:
+		_rings_ensure()
+		_rings_update(world.tick)
 	for id in bots:
-		commands[id] = bots[id].command_for(world.tick, world.get_player(id))
+		if rings_enabled:
+			commands[id] = _bot_command(id, world.tick)
+		else:
+			commands[id] = bots[id].command_for(world.tick, world.get_player(id))
 	var t_sim := Time.get_ticks_usec()
 	world.step(commands, stalled)
 	last_sim_usec = Time.get_ticks_usec() - t_sim
 	var score_changed := false
 	for e in world.drain_events():
-		if e.type in ["death", "flag", "wave"]:
-			Log.d("sim", "tick %d %s" % [world.tick, _event_summary(e)])
-		_host_events.append(e)
-		stats.on_event(e)
-		if e.type == "hit":
-			var brain: Variant = bots.get(e.target)
-			if brain is BotBrain:
-				brain.on_event(e)
-		if e.type in ["death", "spawn", "flag", "wave"]:
-			score_changed = score_changed or e.type != "spawn"
-			_send_reliable_event(e)
-		else:
-			_queue_cosmetic(e)
+		score_changed = _handle_event(e) or score_changed
+	if rings_enabled and rings != null:
+		# DOT fights resolve here, after the world: their deaths run
+		# through the same handling as world deaths (below). A DOT kill
+		# also scores: the killer is a dot with no world.scores entry,
+		# so it is credited to _dot_scores and restored on promotion.
+		for e in rings.tick_dots(world.tick):
+			if e.type == "death" and not e.get("suicide", false):
+				_dot_scores[e.killer] = int(_dot_scores.get(e.killer, 0)) + 1
+			score_changed = _handle_event(e) or score_changed
 	if score_changed:
 		_broadcast_roster()
 	_update_phase()
@@ -456,12 +500,34 @@ func _physics_process(_delta: float) -> void:
 				last_step_usec / 1000.0, last_sim_usec / 1000.0, world.players.size(), bots.size()])
 
 
+## One drained event (world or DOT): host log, stats, reliable/cosmetic
+## send. Returns true when the roster changed (a death, flag or wave).
+func _handle_event(e: Dictionary) -> bool:
+	if e.type in ["death", "flag", "wave"]:
+		Log.d("sim", "tick %d %s" % [world.tick, _event_summary(e)])
+	_host_events.append(e)
+	stats.on_event(e)
+	if e.type == "hit":
+		var brain: Variant = bots.get(e.target)
+		if brain is BotBrain:
+			brain.on_event(e)
+	if e.type in ["death", "spawn", "flag", "wave"]:
+		_send_reliable_event(e)
+		return e.type != "spawn"
+	_queue_cosmetic(e)
+	return false
+
+
 ## A death, flag or wave event in a few words, for the log.
 func _event_summary(e: Dictionary) -> String:
 	if e.type == "death":
 		var name_of := func(id: int) -> String:
 			var p: SimPlayer = world.players.get(id)
-			return "%s (%d)" % [p.display_name if p != null else "?", id]
+			if p != null:
+				return "%s (%d)" % [p.display_name, id]
+			# Gone from the world (left, or a DOT): stats still knows the name.
+			var l: MatchStats.Line = stats.lines.get(id)
+			return "%s (%d)" % [l.name if l != null else "?", id]
 		if e.get("suicide", false) or e.get("environment", false):
 			return "%s died (%s)" % [name_of.call(e.victim), "environment" if e.get("environment", false) else "suicide"]
 		return "%s killed %s with %s%s%s" % [name_of.call(e.killer), name_of.call(e.victim), e.get("weapon", "?"),
@@ -469,6 +535,64 @@ func _event_summary(e: Dictionary) -> String:
 	var shown := e.duplicate()
 	shown.erase("position")
 	return "%s %s" % [e.type, shown]
+
+
+# --- Bot rings (BR Phase 1) ---
+
+## Diagnostics: how many bots are in each ring right now.
+func ring_stats() -> Dictionary:
+	if rings == null:
+		return {"full": 0, "simple": 0, "dot": 0}
+	return rings.ring_stats(bots)
+
+
+## Lazily builds the ring tracker (rings_enabled is set after start(), by
+## match.gd for the BR test match); rebuilds it if the world was replaced.
+func _rings_ensure() -> void:
+	if rings == null or rings.world != world:
+		rings = BotRings.new(world, _rng.randi())
+
+
+## Demotes far bots to dots and promotes near dots back to bodies, reusing
+## the normal add_bot / remove_bot paths (same id and name on the way back).
+func _rings_update(tick: int) -> void:
+	var moves: Dictionary = rings.update(tick, bots)
+	for id in moves.demote:
+		var p: SimPlayer = world.get_player(id)
+		if p == null:
+			continue
+		var brain: Variant = bots.get(id)
+		var difficulty := bot_difficulty
+		if brain is BotBrain:
+			difficulty = brain.difficulty
+		# Stash the bodied score first: remove_bot erases world.scores.
+		_dot_scores[id] = world.scores.get(id, 0)
+		rings.register_dot(id, p.state.position, difficulty, p.display_name)
+		remove_bot(id)
+	for id in moves.promote:
+		var info: Dictionary = rings.dot_info(id)
+		if info.is_empty():
+			continue
+		rings.forget_bot(id)
+		var driver: RefCounted = BotBrain.new(world, bot_nav, id, _rng.randi(), int(info.difficulty)) \
+				if bot_nav != null else TargetDummyDriver.new(_bot_seq * 50)
+		add_bot(String(info.name), driver, id)
+		# add_bot spawns at a random spawn point: put the bot back where
+		# its dot is, or it demotes again on the next tick (on the island
+		# a random spawn is almost always > 220 m from the human).
+		var promoted: SimPlayer = world.get_player(id)
+		if promoted != null:
+			world.teleport(promoted, (info.get("pos", Vector3.ZERO) as Vector3))
+		# add_bot zeroes the fresh world.scores entry: restore the stash
+		# (bodied kills + DOT-fight kills) so the score survives the ring.
+		world.scores[id] = int(_dot_scores.get(id, 0))
+		_dot_scores.erase(id)
+		rings.remove_dot(id)
+
+
+## One bot's command for this tick, through the rings when they are on.
+func _bot_command(id: int, tick: int) -> PlayerCommand:
+	return rings.command_for(id, bots.get(id), tick, world.get_player(id))
 
 
 ## One command per client per tick (PLAN §3.3.2). A missing command first
@@ -668,7 +792,7 @@ func _end_match(lead: int) -> void:
 	var rows := []
 	for id in stats.lines:
 		var l: MatchStats.Line = stats.lines[id]
-		rows.append({"id": l.id, "bot": l.bot, "name": l.name, "score": world.scores.get(id, 0),
+		rows.append({"id": l.id, "bot": l.bot, "name": l.name, "score": world.scores.get(l.id, _dot_scores.get(l.id, 0)),
 				"ticks_played": l.ticks_played(world.tick), "kills": l.kills, "kills_vs_bots": l.kills_vs_bots,
 				"deaths": l.deaths, "deaths_vs_bots": l.deaths_vs_bots, "assists": l.assists,
 				"assists_vs_bots": l.assists_vs_bots, "suicides": l.suicides, "headshot_kills": l.headshot_kills,

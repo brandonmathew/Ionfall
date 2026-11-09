@@ -45,6 +45,11 @@ const DEFAULTS := {
 		"aim_toggle": false,
 		"aim_assist": true,  ## touch only (PLAN §3.11)
 		"auto_fire": false,  ## touch only
+		"gyro_enabled": false,  ## gyroscope aiming (phones)
+		"gyro_mode": "always",  ## always / aiming (scope held)
+		"gyro_sensitivity": 1.0,
+		"gyro_invert_yaw": false,
+		"gyro_invert_pitch": false,
 		"touch_layout": {},  ## {v: 2, button id: [x, y, scale]} (TouchControls.DEFAULT_BUTTONS units)
 		"touch_opacity": 0.8,
 		"keymap": {},  ## action -> physical keycode overrides

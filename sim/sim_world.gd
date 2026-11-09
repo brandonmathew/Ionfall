@@ -911,13 +911,24 @@ func _spawn(p: SimPlayer) -> void:
 
 ## Server-side spawn scoring (PLAN §2.5): far from enemies, out of their sight,
 ## away from recent deaths, never occupied. Picks randomly among the top 3.
+##
+## Two bounds keep this cheap on big maps (Drop Zone has 25,050 spawn
+## points): only SPAWN_EVAL_MAX points are scored per pick, and the
+## line-of-sight raycast only runs for enemies within SPAWN_SIGHT_RANGE —
+## beyond that, distance alone decides. Without the bounds, one spawn pick
+## costs a physics raycast per (spawn point, player) pair — ~30M raycasts
+## to fill a 50-bot match, all on the main thread inside match startup,
+## which froze the loading screen on the phone (2026-11-08).
+const SPAWN_EVAL_MAX := 256  ## spawn points scored per pick at most
+const SPAWN_SIGHT_RANGE := 60.0  ## m: only nearer enemies get a sight raycast
 func _choose_spawn(for_id: int) -> Transform3D:
 	if spawn_points.is_empty():
 		return Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0))
+	var t0 := Time.get_ticks_msec()
 	_recent_deaths = _recent_deaths.filter(func(d: Array) -> bool: return tick - d[1] <= RECENT_DEATH_TICKS)
 	var scored: Array = []
 	var me: SimPlayer = players.get(for_id)
-	for i in spawn_points.size():
+	for i in _spawn_candidates():
 		var pos := spawn_points[i].origin
 		var nearest := 50.0
 		var visible := 0
@@ -931,7 +942,7 @@ func _choose_spawn(for_id: int) -> Transform3D:
 			if teams_enabled and me != null and other.team == me.team:
 				continue  # teammates: see _team_spawn_bonus
 			nearest = minf(nearest, d)
-			if _ray(pos + Vector3(0.0, 1.6, 0.0), other.eye_position()).is_empty():
+			if d < SPAWN_SIGHT_RANGE and _ray(pos + Vector3(0.0, 1.6, 0.0), other.eye_position()).is_empty():
 				visible += 1
 				close_visible += 1 if d < 20.0 else 0
 		var recent := 0
@@ -956,7 +967,31 @@ func _choose_spawn(for_id: int) -> Transform3D:
 	while pool < mini(3, scored.size()) and scored[pool][0] >= scored[0][0] - SPAWN_SCORE_MARGIN:
 		pool += 1
 	var pick: int = scored[_rng.randi_range(0, pool - 1)][1]
+	var ms := Time.get_ticks_msec() - t0
+	if ms > 100:
+		Log.w("sim", "spawn pick took %d ms (%d spawns scored, %d players)" % [ms, scored.size(), players.size()])
 	return spawn_points[pick]
+
+
+## The spawn-point indices _choose_spawn scores: all of them on small
+## maps, a random sample of SPAWN_EVAL_MAX on big ones. Sampling keeps
+## the pick random (the top-3 pool still applies) while bounding the
+## raycast count.
+func _spawn_candidates() -> Array[int]:
+	var n := spawn_points.size()
+	if n <= SPAWN_EVAL_MAX:
+		var all: Array[int] = []
+		all.resize(n)
+		for i in n:
+			all[i] = i
+		return all
+	var picked := {}
+	while picked.size() < SPAWN_EVAL_MAX:
+		picked[_rng.randi_range(0, n - 1)] = true
+	var out: Array[int] = []
+	for i in picked:
+		out.append(i)
+	return out
 
 
 ## TDM spawn scoring (PLAN §2.5): near teammates, away from the enemy half.

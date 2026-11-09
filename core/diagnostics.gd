@@ -8,6 +8,8 @@ const OVERLAY_SCENE := preload("res://ui/diagnostics/diagnostics_overlay.tscn")
 var frame_stats := FrameStats.new(600)
 ## Set by the active match: func() -> String with network rows for the overlay.
 var net_info: Callable
+## Set by the active match: func() -> String with gyroscope rows for the overlay.
+var gyro_info: Callable
 ## Soak testing: the local player is driven by a bot (toggled in the overlay,
 ## or `--autopilot` on the command line).
 var autopilot: bool = false
@@ -112,6 +114,15 @@ func toggle_overlay() -> void:
 		return
 	_overlay.visible = not _overlay.visible
 	Events.diagnostics_toggled.emit(_overlay.visible)
+
+
+## Shows the overlay unconditionally (unlike toggle: deterministic, so a
+## test match always starts with it visible even if it was toggled before).
+func show_overlay() -> void:
+	if _overlay == null:
+		return
+	_overlay.visible = true
+	Events.diagnostics_toggled.emit(true)
 
 
 ## Automated UI checks through real input events (dev): `-- --ui

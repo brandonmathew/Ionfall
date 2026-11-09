@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_12_cover.res" id="1_pt7tq"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_12_spire_glow.res" id="2_8kow7"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_12_terrain.res" id="3_ru830"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Column_Round.gltf" id="4_obwfx"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_SatelliteDish.gltf" id="5_krnjd"]
+
+[node name="DropZoneChunk12" type="Node3D" unique_id=85196064]
+metadata/chunk_index = 12
+metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
+
+[node name="Cover" type="MeshInstance3D" parent="." unique_id=2058418809]
+cast_shadow = 0
+mesh = ExtResource("1_pt7tq")
+
+[node name="SpireGlow" type="MeshInstance3D" parent="." unique_id=550819536]
+cast_shadow = 0
+mesh = ExtResource("2_8kow7")
+
+[node name="Terrain" type="MeshInstance3D" parent="." unique_id=1655785655]
+cast_shadow = 0
+gi_mode = 0
+mesh = ExtResource("3_ru830")
+
+[node name="Piece0" type="Node3D" parent="." unique_id=2085715419 instance=ExtResource("4_obwfx")]
+transform = Transform3D(0.8, 0, 0, 0, 1.2, 0, 0, 0, 0.8, -280, 0, 300)
+
+[node name="Piece1" type="Node3D" parent="." unique_id=1905278578 instance=ExtResource("5_krnjd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -278.5, 0, 300)
+
+[node name="Accent0" type="OmniLight3D" parent="." unique_id=2058173407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -280, 5, 300)
+light_color = Color(0.35, 0.9, 1, 1)
+light_energy = 2.0
+light_bake_mode = 1
+omni_range = 7.0
+
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=498022373]
+bounces = 2
+shadowmask_mode = 2
+environment_mode = 3
+environment_custom_color = Color(0.44, 0.4, 0.42, 1)
+environment_custom_energy = 1.15

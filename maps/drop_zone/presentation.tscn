@@ -1,0 +1,153 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" path="res://maps/station/space_sky.gdshader" id="1_vnd86"]
+[ext_resource type="PackedScene" path="res://maps/foundry/presentation.tscn" id="2_t7e15"]
+[ext_resource type="Script" path="res://maps/drop_zone/chunk_loader.gd" id="3_h4d6m"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cga41"]
+shader = ExtResource("1_vnd86")
+shader_parameter/space_color = Color(0.03, 0.012, 0.012, 1)
+shader_parameter/nebula_color = Color(0.32, 0.1, 0.06, 1)
+shader_parameter/planet_color = Color(0.5, 0.18, 0.08, 1)
+shader_parameter/rim_color = Color(1, 0.55, 0.25, 1)
+shader_parameter/star_density = 0.004
+
+[sub_resource type="Sky" id="Sky_lcutc"]
+sky_material = SubResource("ShaderMaterial_cga41")
+radiance_size = 1
+
+[sub_resource type="Environment" id="Environment_w1k1y"]
+background_mode = 2
+sky = SubResource("Sky_lcutc")
+ambient_light_source = 2
+ambient_light_color = Color(0.4, 0.38, 0.4, 1)
+reflected_light_source = 2
+tonemap_mode = 4
+glow_enabled = true
+glow_intensity = 0.8
+fog_enabled = true
+fog_light_color = Color(0.45, 0.3, 0.24, 1)
+fog_density = 0.0015
+fog_sky_affect = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ga27l"]
+albedo_color = Color(0.55, 0.57, 0.6, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_88v5i"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(140, 14, 70)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cbikg"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(80, 45, 80)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ptyi3"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(64, 1, 48)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tpucl"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(110, 10, 90)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fac4c"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(130, 4, 70)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wxfru"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(70, 18, 140)
+
+[sub_resource type="BoxMesh" id="BoxMesh_kqqx2"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(200, 6, 200)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nhntj"]
+material = SubResource("StandardMaterial3D_ga27l")
+size = Vector3(100, 4, 100)
+
+[node name="DropZonePresentation" type="Node3D" unique_id=1380489778]
+metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
+metadata/grade = {
+"contrast": 0.18,
+"highlights": Color(0.03, 0.01, -0.02, 1),
+"shadows": Color(0.02, 0, 0.03, 1)
+}
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1230241648]
+environment = SubResource("Environment_w1k1y")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1601196630]
+transform = Transform3D(0.49999997, -0.5331785, 0.68243736, 0, 0.7880108, 0.6156615, -0.86602545, -0.30783072, 0.39400536, 0, 0, 0)
+light_color = Color(1, 0.84, 0.68, 1)
+light_energy = 1.45
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_max_distance = 150.0
+
+[node name="FoundryQuarter" type="Node3D" parent="." unique_id=1471971571 instance=ExtResource("2_t7e15")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 250, 0, 0)
+metadata/layout_hash = "e9e8f1b667024a8f4a5793803e78605cca2b8270f56c85d11dd87339820fb8e9"
+metadata/grade = {
+"contrast": 0.18,
+"highlights": Color(0.03, 0.01, -0.02, 1),
+"shadows": Color(0.02, 0, 0.03, 1)
+}
+
+[node name="Silhouette_DockingPort" type="MeshInstance3D" parent="." unique_id=1940751830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, -260)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_88v5i")
+
+[node name="Silhouette_HalcyonSpire" type="MeshInstance3D" parent="." unique_id=1508740107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 185, 22.5, -185)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_cbikg")
+
+[node name="Silhouette_VesperFoundry" type="MeshInstance3D" parent="." unique_id=374224798]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 250, 0.5, 0)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_ptyi3")
+
+[node name="Silhouette_HydroDomes" type="MeshInstance3D" parent="." unique_id=1279837678]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 185, 5, 185)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_tpucl")
+
+[node name="Silhouette_SolarFlats" type="MeshInstance3D" parent="." unique_id=471641514]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 260)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_fac4c")
+
+[node name="Silhouette_TheRidge" type="MeshInstance3D" parent="." unique_id=341224808]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -260, 9, 0)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_wxfru")
+
+[node name="Silhouette_CraterRim" type="MeshInstance3D" parent="." unique_id=1824633431]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_kqqx2")
+
+[node name="Silhouette_Scattersites" type="MeshInstance3D" parent="." unique_id=1642038553]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -185, 2, 185)
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("BoxMesh_nhntj")
+
+[node name="ChunkLoader" type="Node" parent="." unique_id=1735425261]
+script = ExtResource("3_h4d6m")
+
+[node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=957746349]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 22.5, 0)
+max_distance = 826.4708
+size = Vector3(578, 46, 591)
+box_projection = true
+ambient_mode = 0

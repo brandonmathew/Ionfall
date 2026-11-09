@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="IONFALL"
-config/version="1.0.0"
+config/version="1.0.7"
 run/main_scene="res://core/boot.tscn"
 run/flush_stdout_on_print=true
 config/quit_on_go_back=false
@@ -39,6 +39,10 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
+
+[input_devices]
+
+sensors/enable_gyroscope=true
 
 [editor_plugins]
 

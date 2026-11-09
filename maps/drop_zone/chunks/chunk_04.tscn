@@ -1,0 +1,172 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_wall.res" id="1_iu65d"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_slab.res" id="2_6v47i"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_cover.res" id="3_wfq88"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_trim_orange.res" id="4_ngpbf"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_spire_glow.res" id="5_fywd7"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_04_terrain.res" id="6_vdt5o"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Platform_Metal.gltf" id="7_p0d2i"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/WallAstra_Straight_Flat.gltf" id="8_wnqps"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/ShortWall_Metal2_Straight.gltf" id="9_av724"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_Crate4.gltf" id="10_eufcx"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Column_Round.gltf" id="11_axadr"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_SatelliteDish.gltf" id="12_slx0n"]
+
+[node name="DropZoneChunk04" type="Node3D" unique_id=1725430112]
+metadata/chunk_index = 4
+metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
+
+[node name="Wall" type="MeshInstance3D" parent="." unique_id=998697045]
+cast_shadow = 0
+mesh = ExtResource("1_iu65d")
+
+[node name="Slab" type="MeshInstance3D" parent="." unique_id=1503603431]
+cast_shadow = 0
+mesh = ExtResource("2_6v47i")
+
+[node name="Cover" type="MeshInstance3D" parent="." unique_id=1689421752]
+cast_shadow = 0
+mesh = ExtResource("3_wfq88")
+
+[node name="TrimOrange" type="MeshInstance3D" parent="." unique_id=2055646936]
+cast_shadow = 0
+mesh = ExtResource("4_ngpbf")
+
+[node name="SpireGlow" type="MeshInstance3D" parent="." unique_id=1085203277]
+cast_shadow = 0
+mesh = ExtResource("5_fywd7")
+
+[node name="Terrain" type="MeshInstance3D" parent="." unique_id=1999466303]
+cast_shadow = 0
+gi_mode = 0
+mesh = ExtResource("6_vdt5o")
+
+[node name="Piece0" type="Node3D" parent="." unique_id=6867884 instance=ExtResource("7_p0d2i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -260, 5.615855, -19.5)
+
+[node name="Piece1" type="Node3D" parent="." unique_id=988448455 instance=ExtResource("7_p0d2i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -260, 5.615855, -16.5)
+
+[node name="Piece2" type="Node3D" parent="." unique_id=1116794672 instance=ExtResource("7_p0d2i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -256, 5.615855, -19.5)
+
+[node name="Piece3" type="Node3D" parent="." unique_id=605387404 instance=ExtResource("7_p0d2i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -256, 5.615855, -16.5)
+
+[node name="Piece4" type="Node3D" parent="." unique_id=1896473162 instance=ExtResource("8_wnqps")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -259.74, 0, -19.5)
+
+[node name="Piece5" type="Node3D" parent="." unique_id=1346371952 instance=ExtResource("9_av724")]
+transform = Transform3D(1, 0, 0, 0, 3.0564275, 0, 0, 0, 0.75, -259.74, 3, -19.5)
+
+[node name="Piece6" type="Node3D" parent="." unique_id=2101939305 instance=ExtResource("8_wnqps")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -259.74, 0, -16.5)
+
+[node name="Piece7" type="Node3D" parent="." unique_id=1037734658 instance=ExtResource("9_av724")]
+transform = Transform3D(1, 0, 0, 0, 3.0564275, 0, 0, 0, 0.75, -259.74, 3, -16.5)
+
+[node name="Piece8" type="Node3D" parent="." unique_id=1347896591 instance=ExtResource("8_wnqps")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -0.75, -264.26, 0, -19.5)
+
+[node name="Piece9" type="Node3D" parent="." unique_id=48331142 instance=ExtResource("9_av724")]
+transform = Transform3D(-1, 0, 0, 0, 3.0564275, 0, 0, 0, -0.75, -264.26, 3, -19.5)
+
+[node name="Piece10" type="Node3D" parent="." unique_id=658210705 instance=ExtResource("8_wnqps")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -0.75, -264.26, 0, -16.5)
+
+[node name="Piece11" type="Node3D" parent="." unique_id=1483590922 instance=ExtResource("9_av724")]
+transform = Transform3D(-1, 0, 0, 0, 3.0564275, 0, 0, 0, -0.75, -264.26, 3, -16.5)
+
+[node name="Piece12" type="Node3D" parent="." unique_id=654869691 instance=ExtResource("8_wnqps")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -251.74, 0, -19.5)
+
+[node name="Piece13" type="Node3D" parent="." unique_id=1882601368 instance=ExtResource("9_av724")]
+transform = Transform3D(1, 0, 0, 0, 3.0564275, 0, 0, 0, 0.75, -251.74, 3, -19.5)
+
+[node name="Piece14" type="Node3D" parent="." unique_id=11431976 instance=ExtResource("8_wnqps")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.75, -251.74, 0, -16.5)
+
+[node name="Piece15" type="Node3D" parent="." unique_id=1775229863 instance=ExtResource("9_av724")]
+transform = Transform3D(1, 0, 0, 0, 3.0564275, 0, 0, 0, 0.75, -251.74, 3, -16.5)
+
+[node name="Piece16" type="Node3D" parent="." unique_id=834470407 instance=ExtResource("8_wnqps")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -0.75, -256.26, 0, -19.5)
+
+[node name="Piece17" type="Node3D" parent="." unique_id=1297187599 instance=ExtResource("9_av724")]
+transform = Transform3D(-1, 0, 0, 0, 3.0564275, 0, 0, 0, -0.75, -256.26, 3, -19.5)
+
+[node name="Piece18" type="Node3D" parent="." unique_id=157911794 instance=ExtResource("8_wnqps")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -0.75, -256.26, 0, -16.5)
+
+[node name="Piece19" type="Node3D" parent="." unique_id=1206081283 instance=ExtResource("9_av724")]
+transform = Transform3D(-1, 0, 0, 0, 3.0564275, 0, 0, 0, -0.75, -256.26, 3, -16.5)
+
+[node name="Piece20" type="Node3D" parent="." unique_id=315923241 instance=ExtResource("8_wnqps")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -260, 0, -18.74)
+
+[node name="Piece21" type="Node3D" parent="." unique_id=291694811 instance=ExtResource("9_av724")]
+transform = Transform3D(0, 0, -1, 0, 3.0564275, 0, 1, 0, 0, -260, 3, -18.74)
+
+[node name="Piece22" type="Node3D" parent="." unique_id=857275480 instance=ExtResource("8_wnqps")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -256, 0, -18.74)
+
+[node name="Piece23" type="Node3D" parent="." unique_id=907454778 instance=ExtResource("9_av724")]
+transform = Transform3D(0, 0, -1, 0, 3.0564275, 0, 1, 0, 0, -256, 3, -18.74)
+
+[node name="Piece24" type="Node3D" parent="." unique_id=1866245770 instance=ExtResource("8_wnqps")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -260, 0, -23.26)
+
+[node name="Piece25" type="Node3D" parent="." unique_id=155738021 instance=ExtResource("9_av724")]
+transform = Transform3D(0, 0, 1, 0, 3.0564275, 0, -1, 0, 0, -260, 3, -23.26)
+
+[node name="Piece26" type="Node3D" parent="." unique_id=175766781 instance=ExtResource("8_wnqps")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -256, 0, -23.26)
+
+[node name="Piece27" type="Node3D" parent="." unique_id=386426335 instance=ExtResource("9_av724")]
+transform = Transform3D(0, 0, 1, 0, 3.0564275, 0, -1, 0, 0, -256, 3, -23.26)
+
+[node name="Piece28" type="Node3D" parent="." unique_id=1753051741 instance=ExtResource("10_eufcx")]
+transform = Transform3D(2.232143, 0, 0, 0, 1.3392857, 0, 0, 0, 2.232143, -290, 2.6135998, -50)
+
+[node name="Piece29" type="Node3D" parent="." unique_id=633768220 instance=ExtResource("10_eufcx")]
+transform = Transform3D(0.8928571, 0, 1.546474, 0, 1.7857143, 0, -1.546474, 0, 0.8928571, -240, 2.5938375, -55)
+
+[node name="Piece30" type="Node3D" parent="." unique_id=1997287527 instance=ExtResource("10_eufcx")]
+transform = Transform3D(0.8928571, 0, 1.546474, 0, 1.7857143, 0, -1.546474, 0, 0.8928571, -245, 5.2734375, -20)
+
+[node name="Piece31" type="Node3D" parent="." unique_id=1774240968 instance=ExtResource("10_eufcx")]
+transform = Transform3D(2.319711, 0, 0.89285713, 0, 0.89285713, 0, -1.3392857, 0, 1.5464739, -230, 3.375, -40)
+
+[node name="Piece32" type="Node3D" parent="." unique_id=882076585 instance=ExtResource("10_eufcx")]
+transform = Transform3D(0.8928571, 0, 1.546474, 0, 1.7857143, 0, -1.546474, 0, 0.8928571, -265, 3.79215, -45)
+
+[node name="Piece33" type="Node3D" parent="." unique_id=723691007 instance=ExtResource("10_eufcx")]
+transform = Transform3D(2.232143, 0, 0, 0, 1.3392857, 0, 0, 0, 2.232143, -270, 2.3814, -60)
+
+[node name="Piece34" type="Node3D" parent="." unique_id=2085715419 instance=ExtResource("11_axadr")]
+transform = Transform3D(0.8, 0, 0, 0, 1.2, 0, 0, 0, 0.8, -320, 0, -160)
+
+[node name="Piece35" type="Node3D" parent="." unique_id=1905278578 instance=ExtResource("12_slx0n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -318.5, 0, -160)
+
+[node name="Accent0" type="OmniLight3D" parent="." unique_id=702884467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -258, 10.612855, -18)
+light_color = Color(1, 0.55, 0.2, 1)
+light_energy = 3.0
+light_bake_mode = 1
+omni_range = 9.0
+
+[node name="Accent1" type="OmniLight3D" parent="." unique_id=356230518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -320, 5, -160)
+light_color = Color(0.35, 0.9, 1, 1)
+light_energy = 2.0
+light_bake_mode = 1
+omni_range = 7.0
+
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=71667091]
+bounces = 2
+shadowmask_mode = 2
+environment_mode = 3
+environment_custom_color = Color(0.44, 0.4, 0.42, 1)
+environment_custom_energy = 1.15

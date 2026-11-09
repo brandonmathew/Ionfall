@@ -11,6 +11,7 @@ signal closed
 ## method returning one; string choices are shown via "SETTING_VALUE_<X>" keys
 ## or as-is for resolutions), action ([..., method]: a button calling it).
 const DESKTOP_ONLY := ["display_mode", "renderer"]
+const MOBILE_ONLY := ["gyro_enabled", "gyro_mode", "gyro_sensitivity", "gyro_invert_yaw", "gyro_invert_pitch"]
 const SCHEMA := {
 	"SETTINGS_TAB_CONTROLS": [
 		["input", "sensitivity_x", "SETTING_SENS_X", "slider", 0.1, 5.0, 0.05],
@@ -22,6 +23,11 @@ const SCHEMA := {
 		["input", "aim_toggle", "SETTING_AIM_TOGGLE", "check"],
 		["input", "aim_assist", "SETTING_AIM_ASSIST", "check"],
 		["input", "auto_fire", "SETTING_AUTO_FIRE", "check"],
+		["input", "gyro_enabled", "SETTING_GYRO_ENABLED", "check"],
+		["input", "gyro_mode", "SETTING_GYRO_MODE", "choice", ["always", "aiming"]],
+		["input", "gyro_sensitivity", "SETTING_GYRO_SENS", "slider", 0.1, 3.0, 0.05],
+		["input", "gyro_invert_yaw", "SETTING_GYRO_INVERT_YAW", "check"],
+		["input", "gyro_invert_pitch", "SETTING_GYRO_INVERT_PITCH", "check"],
 		["input", "touch_layout", "SETTING_TOUCH_LAYOUT", "action", "open_touch_editor"],
 	],
 	"SETTINGS_TAB_VIDEO": [
@@ -142,6 +148,8 @@ func _build_tab(tab_name: String, rows: Array) -> Control:
 	scroll.add_child(grid)
 	for row in rows:
 		if row[1] in DESKTOP_ONLY and not Settings.has_window_modes():
+			continue
+		if row[1] in MOBILE_ONLY and not Platform.is_mobile():
 			continue
 		var label := Label.new()
 		label.text = row[2]

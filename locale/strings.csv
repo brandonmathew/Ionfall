@@ -107,6 +107,13 @@ SETTING_SENS_X,Look sensitivity (horizontal)
 SETTING_SENS_Y,Look sensitivity (vertical)
 SETTING_TOUCH_SENS,Touch look sensitivity
 SETTING_INVERT_Y,Invert vertical look
+SETTING_GYRO_ENABLED,Gyroscope aiming
+SETTING_GYRO_MODE,Gyroscope mode
+SETTING_GYRO_SENS,Gyroscope sensitivity
+SETTING_GYRO_INVERT_YAW,Invert gyroscope yaw
+SETTING_GYRO_INVERT_PITCH,Invert gyroscope pitch
+SETTING_VALUE_ALWAYS,Always
+SETTING_VALUE_AIMING,While aiming
 SETTING_CROUCH_TOGGLE,Crouch: toggle instead of hold
 SETTING_SPRINT_TOGGLE,Sprint: toggle instead of hold
 SETTING_AIM_TOGGLE,Aim: toggle instead of hold
@@ -151,6 +158,7 @@ NET_MAP_MISMATCH,"The host is on a different map (%s); update both devices to th
 MAP_STATION,Meridian Station
 MAP_SPIRE,Halcyon Spire
 MAP_FOUNDRY,Vesper Foundry
+MAP_DROP_ZONE,Drop Zone
 MENU_MAP,"Map: %s  ›"
 MAP_TEST_ARENA,Test Arena
 MENU_TAGLINE,Arena combat · LAN & online · Cross-play
@@ -277,6 +285,7 @@ NET_ONLINE_VERSION,That game runs a different version of IONFALL
 MENU_SINGLE_PLAYER,Single Player
 MENU_START,Start
 MENU_WATCH,Watch
+MENU_BR_PHASE1_TEST,BR PHASE 1 TEST
 SPECTATE_WATCHING,Watching %s
 SPECTATE_HINT,"Click or Space: next player · Right click: previous · Esc: menu"
 SPECTATE_HINT_TOUCH,Tap to watch the next player
@@ -313,6 +322,7 @@ LOBBY_HOST_LEFT,The host closed the lobby
 MAP_STATION_BLURB,Compact station deck · close quarters
 MAP_SPIRE_BLURB,Open moon platform · long sightlines
 MAP_FOUNDRY_BLURB,Refinery yard · catwalks and close quarters
+MAP_DROP_ZONE_BLURB,Open island · long sightlines and wide drops
 MENU_SINGLE_PLAYER_SUB,Practice against bots on any map
 MENU_HOST_SUB,Open a LAN or online lobby
 MENU_HOST_LAN_SUB,Players on the same Wi-Fi join you

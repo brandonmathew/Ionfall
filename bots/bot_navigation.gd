@@ -6,6 +6,23 @@ extends Node3D
 ## (mantle, double jump + mantle) and drops, plus one-way links over the
 ## map's jump pads. Each link carries the traversal it needs, so maps need
 ## no hand-placed bot data.
+##
+## Drop Zone (BR Phase 1) bakes per chunk instead: the gameplay scene has
+## 16 chunk bodies (World_C0..World_C15, 200 x 200 m each), and one
+## NavigationRegion3D is baked per chunk on the same navigation map, so
+## paths cross chunk seams. Each chunk bakes from the layout geometry in
+## its rect (boxes from DropZoneLayout, terrain from ground_height on
+## the same 10 m grid the collision patches use). Two seam rules, both
+## learned the hard way: (1) the terrain bake reaches 2 m past the rect,
+## because Recast erodes about an agent radius at each bake's border and
+## regions baked to exactly touching rects leave a gap at the seam and
+## never merge; the strip triangles are identical in both chunks (grid
+## anchored to island coords) and the map merge deduplicates those.
+## (2) Boxes are CLIPPED at the chunk boundary and baked into both
+## sides, never duplicated whole: baking an overhanging box whole into
+## two chunks put duplicate edges in the same map raster cell (23 edge
+## errors). Arena maps (station/spire/foundry/test_arena) have no chunk
+## bodies and keep the original single bake.
 
 enum Traversal { NONE, JUMP_MANTLE, DOUBLE_JUMP_MANTLE, DROP, PAD }
 
@@ -21,8 +38,33 @@ const MAX_DROP := 6.0
 const PROBE_SPACING := 1.0
 const PROBE_REACH := [0.7, 1.2, 1.7]
 const LINK_MIN_SPACING := 2.0
+## How far past a chunk's rect its TERRAIN bake reaches. This is exactly
+## one agent radius (0.5 m): Recast erodes about an agent radius at each
+## bake's border, so a 0.5 m overlap makes neighbouring walkable areas
+## meet exactly at the seam. A WIDER margin is worse, not better: the
+## 10 m terrain grid then runs a full cell past the rect, so the overlap
+## strip is 20 m of coincident triangles from up to four chunks, and the
+## map's merge of those duplicate sheets is unreliable — paths died at
+## 4-chunk corners (diag stopped 9.5 m short of (-200,-200)) and at the
+## C7/C11 seam (points at z=9.5 snapped to C7's dead-end sheet). With
+## 0.5 m the strip is 1 m wide, the sheets meet at the seam, and the full
+## diagonal, the C7/C11 seam and the C11/C15 seam all pass. Boxes are
+## still clipped to the exact rect (see _bake_chunk_mesh), never duplicated.
+const CHUNK_OVERLAP_MARGIN := 0.5
+## Terrain patch grid (matches maps/drop_zone/gameplay.gd).
+const TERRAIN_STEP := 10.0
 
 var navmesh := NavigationMesh.new()
+## Chunked builds: one navmesh / region per chunk, in chunk-index order.
+var navmeshes: Array[NavigationMesh] = []
+var regions: Array[NavigationRegion3D] = []
+var chunked := false
+## Per-chunk build time (source geometry + bake), in ms, chunk order;
+## bake_total_ms is their sum. Reported by the tests; a total over ~20 s
+## would mean pre-baked navmesh resources are needed instead (not built
+## here).
+var bake_timings_ms: Array[float] = []
+var bake_total_ms := 0.0
 var links: Array[NavigationLink3D] = []
 var ready_for_queries: bool = false
 
@@ -33,6 +75,30 @@ var _space: PhysicsDirectSpaceState3D
 ## Bakes from the colliders under `gameplay` and generates traversal links.
 ## Call after the map's bodies are in the physics space (one physics frame).
 func build(gameplay: Node3D) -> void:
+	var chunks := _chunk_bodies(gameplay)
+	Log.i("nav", "building navmesh (%s, %d chunk bodies)" % ["chunked" if not chunks.is_empty() else "single", chunks.size()])
+	if chunks.is_empty():
+		await _build_single(gameplay)
+	else:
+		await _build_chunked(gameplay, chunks)
+
+
+## The chunk bodies under `gameplay` (World_C*), in chunk-index order.
+static func _chunk_bodies(gameplay: Node3D) -> Array[StaticBody3D]:
+	var out: Array[StaticBody3D] = []
+	for child in gameplay.get_children():
+		if child is StaticBody3D and (child as Node).name.begins_with("World_C"):
+			out.append(child)
+	out.sort_custom(func(a: StaticBody3D, b: StaticBody3D) -> bool: return _chunk_index(a.name) < _chunk_index(b.name))
+	return out
+
+
+static func _chunk_index(chunk_name: String) -> int:
+	return int(chunk_name.trim_prefix("World_C"))
+
+
+## The original single-bake path, unchanged, for the arena maps.
+func _build_single(gameplay: Node3D) -> void:
 	navmesh.agent_radius = AGENT_RADIUS
 	navmesh.agent_height = AGENT_HEIGHT
 	navmesh.agent_max_climb = AGENT_CLIMB
@@ -54,15 +120,227 @@ func build(gameplay: Node3D) -> void:
 	# generation queries it), once more for the links.
 	var verts := navmesh.get_vertices()
 	if verts.is_empty():
-		push_warning("BotNavigation: empty navmesh")
+		Log.e("nav", "empty navmesh — bots cannot navigate")
 		return
 	await _wait_until_queryable(verts[0])
-	_generate_links()
+	_generate_links_for(navmesh, [])
 	if gameplay.has_method("jump_pads"):
 		for pad: Dictionary in gameplay.jump_pads():
 			_add_pad_link(pad)
 	await _map_synced()
 	ready_for_queries = true
+	Log.i("nav", "navmesh ready: %d polys, %d links" % [navmesh.get_polygon_count(), links.size()])
+
+
+## Per-chunk bake for Drop Zone: one region per chunk on the same map.
+func _build_chunked(gameplay: Node3D, chunks: Array[StaticBody3D]) -> void:
+	chunked = true
+	_space = get_world_3d().direct_space_state
+	NavigationServer3D.map_set_cell_size(map(), CELL)
+	NavigationServer3D.map_set_cell_height(map(), CELL)
+	var all_boxes := DropZoneLayout.boxes()
+	var placed: Array[Vector3] = []
+	var first_verts := PackedVector3Array()
+	for body in chunks:
+		var idx := _chunk_index(body.name)
+		var t0 := Time.get_ticks_usec()
+		var mesh := _bake_chunk_mesh(idx, all_boxes)
+		var ms := (Time.get_ticks_usec() - t0) / 1000.0
+		bake_timings_ms.append(ms)
+		bake_total_ms += ms
+		navmeshes.append(mesh)
+		Log.d("nav", "chunk %02d baked in %.0f ms, %d polys" % [idx, ms, mesh.get_polygon_count()])
+		if navmeshes.size() == 1:
+			navmesh = mesh
+		var region := NavigationRegion3D.new()
+		region.navigation_mesh = mesh
+		add_child(region)
+		regions.append(region)
+		if first_verts.is_empty():
+			first_verts = mesh.get_vertices()
+	if first_verts.is_empty():
+		Log.e("nav", "empty chunked navmesh — bots cannot navigate")
+		return
+	await _wait_until_queryable(first_verts[0])
+	for mesh in navmeshes:
+		_generate_links_for(mesh, placed)
+	if gameplay.has_method("jump_pads"):
+		for pad: Dictionary in gameplay.jump_pads():
+			_add_pad_link(pad)
+	await _map_synced()
+	ready_for_queries = true
+	var total_polys := 0
+	for mesh in navmeshes:
+		total_polys += mesh.get_polygon_count()
+	Log.i("nav", "chunked navmesh ready in %.0f ms total: %d regions, %d polys, %d links" % [
+			bake_total_ms, regions.size(), total_polys, links.size()])
+
+
+## Bakes chunk `idx` from the layout geometry around its rect: every box
+## whose AABB touches the rect, clipped to it (see _clip_poly), plus the
+## terrain over the rect expanded by CHUNK_OVERLAP_MARGIN, triangulated
+## from ground_height() on the 10 m grid the collision patches use (grid
+## anchored to island coords, so a chunk rect — a multiple of 200 m —
+## never splits a terrain cell). All geometry goes in as raw faces
+## (add_faces): passing Mesh resources through add_mesh makes the bake
+## read them back from the RenderingServer and logs a warning.
+func _bake_chunk_mesh(idx: int, all_boxes: Array) -> NavigationMesh:
+	var mesh := NavigationMesh.new()
+	mesh.agent_radius = AGENT_RADIUS
+	mesh.agent_height = AGENT_HEIGHT
+	mesh.agent_max_climb = AGENT_CLIMB
+	mesh.agent_max_slope = 40.0
+	mesh.cell_size = CELL
+	mesh.cell_height = CELL
+	# Cap polygon edges at one terrain grid cell: without this, Recast
+	# merges flat terrain into huge triangles whose edges do not coincide
+	# across chunks, so overlapping sheets never share an edge and paths
+	# die at 4-chunk corners (diag stops 9.5 m short of (-200,-200)).
+	# With edges on the shared 10 m grid, adjacent chunks' polygons
+	# share edges and the map merges.
+	mesh.edge_max_length = 10.0
+	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	mesh.geometry_collision_mask = Sim.LAYER_WORLD
+	var source := NavigationMeshSourceGeometryData3D.new()
+	var rect := DropZoneLayout.chunk_rect(idx)
+	var x0 := maxf(rect.position.x - CHUNK_OVERLAP_MARGIN, -DropZoneLayout.ISLAND_HALF)
+	var z0 := maxf(rect.position.y - CHUNK_OVERLAP_MARGIN, -DropZoneLayout.ISLAND_HALF)
+	var x1 := minf(rect.end.x + CHUNK_OVERLAP_MARGIN, DropZoneLayout.ISLAND_HALF)
+	var z1 := minf(rect.end.y + CHUNK_OVERLAP_MARGIN, DropZoneLayout.ISLAND_HALF)
+	var expanded := Rect2(x0, z0, x1 - x0, z1 - z0)
+	var span := AABB(Vector3(rect.position.x, -30.0, rect.position.y),
+			Vector3(rect.size.x, 120.0, rect.size.y))
+	var faces := PackedVector3Array()
+	for b in all_boxes:
+		var aabb := DropZoneLayout.box_aabb(b)
+		if not aabb.intersects(span):
+			continue
+		var size: Vector3 = b[2]
+		var xform := Transform3D(Basis.from_euler((b[3] as Vector3) * (PI / 180.0)), b[1])
+		if aabb.position.x >= rect.position.x and aabb.end.x <= rect.end.x \
+				and aabb.position.z >= rect.position.y and aabb.end.z <= rect.end.y:
+			# Wholly inside: bake the box as-is.
+			for tri in _box_triangles(size, xform):
+				faces.append_array(tri)
+		else:
+			# Straddles the boundary: bake only the part inside this
+			# chunk (the neighbour bakes the rest), so the box's faces
+			# are never duplicated across the seam.
+			for tri in _box_triangles(size, xform):
+				var poly := _clip_poly(tri, 0, rect.position.x, false)
+				poly = _clip_poly(poly, 0, rect.end.x, true)
+				poly = _clip_poly(poly, 2, rect.position.y, false)
+				poly = _clip_poly(poly, 2, rect.end.y, true)
+				for k in range(1, poly.size() - 1):
+					faces.append_array([poly[0], poly[k], poly[k + 1]])
+	faces.append_array(_terrain_faces(expanded))
+	source.add_faces(faces, Transform3D.IDENTITY)
+	NavigationServer3D.bake_from_source_geometry_data(mesh, source)
+	return mesh
+
+
+## The 12 triangles of a box of `size` at `xform`.
+## WINDING: the triangles are wound so that (b - a) x (c - a) points
+## INWARD (down for the top face). That is the opposite of the geometric
+## outward normal, and it is what Godot's navigation bake wants:
+## verified empirically 2026-11-09 — a slab top wound outward (normal +y)
+## bakes to 0 polygons via add_faces, the same triangles flipped bake
+## fine, the terrain triangles (which bake) use the same inward
+## convention, and Godot's own BoxShape3D faces (parse path) bake the
+## slab top to 65 polygons. With outward winding, top faces never bake
+## (Hydro slab tops, ship hull top) while bottom faces DO bake, creating
+## phantom floating platforms (e.g. the superstructure wall bottom at
+## y=-3.5 baked as a sealed pocket the ship jump-pad link routes into).
+static func _box_triangles(size: Vector3, xform: Transform3D) -> Array:
+	var h := size * 0.5
+	var c := []
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				c.append(xform * Vector3(h.x * sx, h.y * sy, h.z * sz))
+	# Corners: 0 (-,-,-) 1 (-,-,+) 2 (-,+,-) 3 (-,+,+) 4 (+,-,-) 5 (+,-,+)
+	# 6 (+,+,-) 7 (+,+,+). Each quad is split into two triangles with the
+	# 2nd and 3rd vertices swapped relative to the outward-wound order,
+	# so the bake sees the inward winding it requires (see above).
+	var quads := [
+		[0, 1, 3, 2],  # -x
+		[4, 6, 7, 5],  # +x
+		[0, 4, 5, 1],  # -y (bottom)
+		[2, 3, 7, 6],  # +y (top)
+		[0, 2, 6, 4],  # -z
+		[1, 5, 7, 3],  # +z
+	]
+	var out := []
+	for q in quads:
+		out.append(PackedVector3Array([c[q[0]], c[q[2]], c[q[1]]]))
+		out.append(PackedVector3Array([c[q[0]], c[q[3]], c[q[2]]]))
+	return out
+
+
+## Sutherland–Hodgman: keeps the part of `poly` on the inside of one
+## vertical plane of the chunk rect (`axis` 0 = x, 2 = z; `keep_below`
+## keeps coord <= `value`, else coord >= `value`).
+static func _clip_poly(poly: PackedVector3Array, axis: int, value: float, keep_below: bool) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	if poly.is_empty():
+		return out
+	for i in poly.size():
+		var a: Vector3 = poly[i]
+		var b: Vector3 = poly[(i + 1) % poly.size()]
+		var da := _plane_dist(a, axis, value, keep_below)
+		var db := _plane_dist(b, axis, value, keep_below)
+		var a_in := da >= 0.0
+		var b_in := db >= 0.0
+		if a_in:
+			out.append(a)
+		if a_in != b_in:
+			out.append(a.lerp(b, da / (da - db)))
+	return out
+
+
+static func _plane_dist(p: Vector3, axis: int, value: float, keep_below: bool) -> float:
+	var v := p.x if axis == 0 else p.z
+	return (value - v) if keep_below else (v - value)
+
+
+## Terrain triangles over `rect` from ground_height(), wound (a, b, c) /
+## (b, d, c) like the collision patches in maps/drop_zone/gameplay.gd.
+## Each triangle is clipped to `rect`: the 10 m grid cells otherwise run
+## a full cell past the rect, so a chunk's terrain would overlap its
+## neighbour by 20 m and a point in the strip snaps to either chunk's
+## sheet — the neighbour's sheet is a dead end past the seam (paths south
+## from z=9.5 in C11 died because they snapped to C7's sheet, which ends
+## at z=10). Clipped to the expanded rect the overlap is exactly the
+## 2 m margin, and points outside it belong to one chunk only.
+func _terrain_faces(rect: Rect2) -> PackedVector3Array:
+	var faces := PackedVector3Array()
+	var gx0 := int(floor(rect.position.x / TERRAIN_STEP)) * int(TERRAIN_STEP)
+	var gz0 := int(floor(rect.position.y / TERRAIN_STEP)) * int(TERRAIN_STEP)
+	var x := float(gx0)
+	while x < rect.end.x:
+		var z := float(gz0)
+		while z < rect.end.y:
+			var a := Vector3(x, DropZoneLayout.ground_height(x, z), z)
+			var b := Vector3(x + TERRAIN_STEP, DropZoneLayout.ground_height(x + TERRAIN_STEP, z), z)
+			var c := Vector3(x, DropZoneLayout.ground_height(x, z + TERRAIN_STEP), z + TERRAIN_STEP)
+			var d := Vector3(x + TERRAIN_STEP, DropZoneLayout.ground_height(x + TERRAIN_STEP, z + TERRAIN_STEP), z + TERRAIN_STEP)
+			_append_clipped(faces, PackedVector3Array([a, b, c]), rect)
+			_append_clipped(faces, PackedVector3Array([b, d, c]), rect)
+			z += TERRAIN_STEP
+		x += TERRAIN_STEP
+	return faces
+
+
+## Clips `tri` to `rect` (Sutherland–Hodgman, same planes as the box
+## clip) and appends the result as fan triangles. Degenerate results
+## (fewer than 3 vertices) add nothing.
+static func _append_clipped(faces: PackedVector3Array, tri: PackedVector3Array, rect: Rect2) -> void:
+	var poly := _clip_poly(tri, 0, rect.position.x, false)
+	poly = _clip_poly(poly, 0, rect.end.x, true)
+	poly = _clip_poly(poly, 2, rect.position.y, false)
+	poly = _clip_poly(poly, 2, rect.end.y, true)
+	for k in range(1, poly.size() - 1):
+		faces.append_array([poly[0], poly[k], poly[k + 1]])
 
 
 ## Until the map answers queries near a point of our navmesh.
@@ -124,17 +402,18 @@ func closest_point(p: Vector3) -> Vector3:
 
 # --- Link generation ---
 
-func _generate_links() -> void:
-	var verts := navmesh.get_vertices()
+## Traversal links for one navmesh. `placed` is shared across chunks so
+## the overlap strip doesn't get a link from each side of a seam.
+func _generate_links_for(mesh: NavigationMesh, placed: Array[Vector3]) -> void:
+	var verts := mesh.get_vertices()
 	var edge_count := {}
 	var polys := []
-	for i in navmesh.get_polygon_count():
-		var poly := navmesh.get_polygon(i)
+	for i in mesh.get_polygon_count():
+		var poly := mesh.get_polygon(i)
 		polys.append(poly)
 		for j in poly.size():
 			var key := _edge_key(poly[j], poly[(j + 1) % poly.size()])
 			edge_count[key] = edge_count.get(key, 0) + 1
-	var placed: Array[Vector3] = []
 	for poly: PackedInt32Array in polys:
 		var center := Vector3.ZERO
 		for idx in poly:

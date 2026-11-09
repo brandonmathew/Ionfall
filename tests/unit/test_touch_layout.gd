@@ -44,7 +44,16 @@ func test_v2_layouts_with_removed_buttons_are_replaced() -> void:
 	tc.apply_layout({"v": 2, "fire": [0.5, 0.5, 1.2], "reload": [0.47, 0.22, 1.0]})
 	var l := tc.layout()
 	assert_eq(l.fire, [TouchControls.DEFAULT_BUTTONS[0].pos.x, TouchControls.DEFAULT_BUTTONS[0].pos.y, 1.0])
-	assert_false(l.has("reload"), "Reload is now a tap on the ammo counter")
+	assert_eq(l.reload[2], 1.0, "v4 brings Reload back above Fire")
+
+
+func test_v3_layouts_are_replaced_by_v4_defaults() -> void:
+	var tc := TouchControls.new()
+	add_child_autofree(tc)
+	tc.apply_layout({"v": 3, "fire": [0.5, 0.5, 1.2]})
+	var l := tc.layout()
+	assert_eq(l.fire, [TouchControls.DEFAULT_BUTTONS[0].pos.x, TouchControls.DEFAULT_BUTTONS[0].pos.y, 1.0])
+	assert_true(l.has("reload"), "Reload is a button again in v4")
 
 
 func test_scope_button_toggles_aim() -> void:
@@ -89,3 +98,89 @@ func test_editor_covers_the_screen_inside_an_offset_page() -> void:
 	await wait_process_frames(2)
 	assert_eq(editor.get_global_rect().position, Vector2.ZERO)
 	assert_eq(editor.get_global_rect().size, editor.get_viewport_rect().size)
+
+
+func _open_editor() -> TouchLayoutEditor:
+	var editor := TouchLayoutEditor.new()
+	add_child_autofree(editor)
+	editor.open()
+	await wait_process_frames(2)
+	return editor
+
+
+func _tap(pos: Vector2, pressed: bool) -> InputEventScreenTouch:
+	var ev := InputEventScreenTouch.new()
+	ev.pressed = pressed
+	ev.position = pos
+	ev.index = 0
+	return ev
+
+
+func _fire_center(editor: TouchLayoutEditor) -> Vector2:
+	var screen := editor.get_viewport_rect().size
+	return screen - Vector2(0.27, 0.31) * screen.y
+
+
+func test_editor_panel_touch_keeps_selection_and_resize_works() -> void:
+	# The size slider only resizes the selected button, so touching the panel
+	# must not clear the selection (the 1.0.2 bug: the press cleared it and
+	# the slider then did nothing).
+	var editor := await _open_editor()
+	assert_ne(editor._controls.edit_ui_rect.size, Vector2.ZERO, "panel rect known")
+	var fire := _fire_center(editor)
+	editor._controls._input(_tap(fire, true))
+	editor._controls._input(_tap(fire, false))
+	assert_eq(editor._controls.selected, "fire")
+	assert_true(editor._size_slider.editable)
+	editor._controls._input(_tap(editor._controls.edit_ui_rect.get_center(), true))
+	assert_eq(editor._controls.selected, "fire", "panel touch keeps the selection")
+	editor._size_slider.value = 1.5
+	assert_almost_eq(editor._controls.scale_of("fire"), 1.5, 0.001)
+
+
+func test_editor_panel_drag_moves_no_button() -> void:
+	var editor := await _open_editor()
+	var fire := _fire_center(editor)
+	editor._controls._input(_tap(fire, true))
+	editor._controls._input(_tap(fire, false))
+	var before: Dictionary = editor._controls.layout()
+	var panel_pos := editor._controls.edit_ui_rect.get_center()
+	editor._controls._input(_tap(panel_pos, true))
+	var drag := InputEventScreenDrag.new()
+	drag.position = panel_pos + Vector2(60, 0)
+	drag.relative = Vector2(60, 0)
+	drag.index = 0
+	editor._controls._input(drag)
+	assert_eq(editor._controls.layout().fire, before.fire, "slider drags move no button")
+	assert_eq(editor._controls.selected, "fire")
+
+
+func test_editor_drag_moves_selected_button() -> void:
+	var editor := await _open_editor()
+	var fire := _fire_center(editor)
+	editor._controls._input(_tap(fire, true))
+	var before: Dictionary = editor._controls.layout()
+	var drag := InputEventScreenDrag.new()
+	drag.position = fire + Vector2(80, 0)
+	drag.relative = Vector2(80, 0)
+	drag.index = 0
+	editor._controls._input(drag)
+	editor._controls._input(_tap(fire + Vector2(80, 0), false))
+	assert_ne(editor._controls.layout().fire, before.fire, "button drag still moves the button")
+
+
+func test_editor_opacity_slider_dims_buttons() -> void:
+	var editor := await _open_editor()
+	editor._opacity_slider.value = 0.5
+	assert_almost_eq(editor._controls.modulate.a, 0.5, 0.01)
+
+
+func test_reload_button_is_in_the_cluster() -> void:
+	var ids: Array = []
+	for b in TouchControls.DEFAULT_BUTTONS:
+		ids.append(b.id)
+	assert_true(ids.has("reload"))
+	for b in TouchControls.DEFAULT_BUTTONS:
+		if b.id == "reload":
+			assert_eq(b.press, PlayerCommand.Action.RELOAD)
+			assert_eq(b.pos, Vector2(0.27, 0.52), "above Fire")

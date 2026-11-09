@@ -9,13 +9,16 @@ extends Control
 ## anchored to the bottom-right corner and measured in screen heights, so it
 ## keeps its shape on 16:9 and 20:9 screens alike: Jump in the corner where
 ## the thumb rests, Crouch below Fire, Scope (a toggle) on its left, Grenade
-## above Jump. Kept to the essentials: tapping a weapon chip in the HUD
-## switches to it, tapping the ammo counter reloads (empty magazines reload
-## on their own), and firing at an enemy within arm's reach melees. Icons
-## only, each a picture of the action.
+## above Jump, Reload above Fire. Kept to the essentials: tapping a weapon
+## chip in the HUD switches to it, tapping the ammo counter reloads (empty
+## magazines reload on their own), and firing at an enemy within arm's reach
+## melees. Icons only, each a picture of the action.
 ## Layout editor (PLAN §3.11): each button's position and size can be
 ## overridden (settings input/touch_layout) and all share an opacity; in
 ## `editing` mode fingers (or the mouse) drag buttons instead of playing.
+## The editor's panel sits over the play area, so `edit_ui_rect` marks the
+## panel's screen rect: touches inside it belong to the panel's sliders and
+## buttons, never to a button drag, and never clear the selection.
 
 signal selection_changed(id: String)
 
@@ -59,12 +62,14 @@ const DEFAULT_BUTTONS := [
 	{"id": "crouch", "label": "TOUCH_CROUCH", "pos": Vector2(0.29, 0.115), "radius": 0.055, "held": PlayerCommand.Held.CROUCH},
 	{"id": "scope", "label": "TOUCH_SCOPE", "pos": Vector2(0.48, 0.26), "radius": 0.065, "toggle": PlayerCommand.Held.AIM},
 	{"id": "grenade", "label": "TOUCH_GRENADE", "pos": Vector2(0.09, 0.36), "radius": 0.055, "press": PlayerCommand.Action.GRENADE},
+	{"id": "reload", "label": "TOUCH_RELOAD", "pos": Vector2(0.27, 0.52), "radius": 0.055, "press": PlayerCommand.Action.RELOAD},
 	{"id": "interact", "label": "TOUCH_INTERACT", "pos": Vector2(0.44, 0.49), "radius": 0.06, "press": PlayerCommand.Action.INTERACT,
 			"contextual": true},
 ]
 ## Saved layouts older than this are dropped for the new defaults (v1 used
-## fractions of the screen, v2 had Reload, Swap and Melee buttons).
-const LAYOUT_VERSION := 3
+## fractions of the screen, v2 had Reload, Swap and Melee buttons, v3 dropped
+## Reload again — v4 brings it back above Fire, where it can be seen).
+const LAYOUT_VERSION := 4
 ## Where the floating stick's resting hint sits: offset from the
 ## bottom-left corner, in screen heights.
 const STICK_HINT := Vector2(0.3, 0.3)
@@ -75,12 +80,18 @@ const ICONS := {
 	"jump": preload("res://art/ui/touch/jump.png"),
 	"crouch": preload("res://art/ui/touch/crouch.png"),
 	"grenade": preload("res://art/ui/touch/grenade.png"),
+	"reload": preload("res://art/ui/touch/reload.png"),
 	"interact": preload("res://art/ui/touch/interact.png"),
 }
 const MAX_SCALE := 1.8
 
 var editing: bool = false
 var selected: String = ""
+## Screen rect of the layout editor's panel, in viewport coordinates: input
+## inside it belongs to the panel, never to a button. The editor keeps it
+## current (panel resized / viewport resized / editor opened).
+var edit_ui_rect := Rect2()
+var _dragging_button := false
 var _buttons: Array = []  ## DEFAULT_BUTTONS with the layout applied
 var _drag_offset := Vector2.ZERO
 var _fingers: Dictionary = {}  ## index -> {kind, origin, pos, button}
@@ -166,24 +177,48 @@ func _edit_input(event: InputEvent) -> void:
 	var up: bool = (event is InputEventScreenTouch and not event.pressed) or \
 			(event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed)
 	var drag: bool = event is InputEventScreenDrag or (event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT)
+	if up:
+		# A lift ends the gesture wherever the finger is (even over the panel).
+		_dragging_button = false
+		_drag_offset = Vector2.ZERO
+		queue_redraw()
+		return
+	if down or drag:
+		# Touches on the editor's panel belong to its sliders and buttons:
+		# they must neither clear the selection nor be swallowed as a button
+		# drag — or the size slider can never resize the selected button.
+		var pos := _event_position(event)
+		if edit_ui_rect.has_point(pos):
+			return
 	if down:
 		var b := _button_at(event.position)
 		if not b.is_empty():
 			selected = b.id
+			_dragging_button = true
 			_drag_offset = _center(b) - event.position
 			selection_changed.emit(selected)
 			get_viewport().set_input_as_handled()
 		else:
-			selected = ""
-	elif drag and not selected.is_empty():
+			if not selected.is_empty():
+				selected = ""
+				selection_changed.emit(selected)
+			_dragging_button = false
+	elif drag and _dragging_button and not selected.is_empty():
 		for b: Dictionary in _buttons:
 			if b.id == selected:
 				var screen := _screen()
 				b.pos = _clamp_offset((screen - (event.position + _drag_offset)) / screen.y)
 		get_viewport().set_input_as_handled()
-	elif up:
-		_drag_offset = Vector2.ZERO
 	queue_redraw()
+
+
+## Viewport position of a press/drag event, or an off-screen point for others.
+static func _event_position(event: InputEvent) -> Vector2:
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		return event.position
+	if event is InputEventMouseButton or event is InputEventMouseMotion:
+		return event.position
+	return Vector2(-1, -1)
 
 
 func _input(event: InputEvent) -> void:

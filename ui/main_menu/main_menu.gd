@@ -309,6 +309,13 @@ func _build_solo() -> void:
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bottom.add_child(hint)
+	# BR Phase 1 ground-truth test: 50 bots on drop_zone, diagnostics up
+	# from the start. Test-only: never saved to the profile.
+	var br_test := UiStyle.menu_button("MENU_BR_PHASE1_TEST", &"GhostButton")
+	br_test.custom_minimum_size = Vector2(260, 64)
+	br_test.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	br_test.pressed.connect(_start_br_phase1_test)
+	bottom.add_child(br_test)
 	# Spectator mode: the same match with bots only, watched from their eyes.
 	var watch := UiStyle.menu_button("MENU_WATCH", &"GhostButton")
 	watch.custom_minimum_size = Vector2(220, 64)
@@ -758,6 +765,19 @@ func _start_solo(watch: bool = false) -> void:
 	var config := _config(MatchConfig.Mode.OFFLINE, MatchConfig.profile_bots())
 	config.bots = config.clamp_bots(config.bots, false)
 	config.spectate = watch or Platform.user_args.has("--spectate")
+	_go(MATCH, config)
+
+
+## BR Phase 1 ground-truth test (PLAN): 50 bots in an FFA deathmatch on
+## drop_zone with the diagnostics overlay up from the start. Built fresh
+## from the profile (name, character, difficulty) and never saved, so the
+## normal Solo choices are untouched afterwards.
+func _start_br_phase1_test() -> void:
+	var config := _config(MatchConfig.Mode.OFFLINE, 49)
+	config.map = "drop_zone"
+	config.game_mode = GameMode.FFA
+	config.bots = 49
+	config.br_phase1_test = true
 	_go(MATCH, config)
 
 

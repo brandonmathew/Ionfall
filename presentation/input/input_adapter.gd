@@ -10,6 +10,8 @@ const MOUSE_RADIANS_PER_PIXEL := 0.0022
 
 var look_yaw: float = 0.0
 var look_pitch: float = 0.0
+## Gyroscope aiming (phones): GyroAim feeds add_look() every frame.
+var gyro := GyroAim.new()
 ## Set by touch controls.
 var touch_move := Vector2.ZERO
 var touch_held: int = 0
@@ -42,12 +44,21 @@ var _crouch_on: bool = false
 var _sprint_on: bool = false
 
 
+func _process(delta: float) -> void:
+	gyro.update(delta, self)
+
+
 func _ready() -> void:
 	_ensure_actions()
 	apply_keymap()
 	Events.settings_changed.connect(func(section: String, key: String, _value: Variant) -> void:
 		if section == "input" and key == "keymap":
 			apply_keymap())
+
+
+## One line for the diagnostics overlay (F3 / three-finger tap).
+func gyro_status() -> String:
+	return gyro.status_text()
 
 
 func press(action: int) -> void:

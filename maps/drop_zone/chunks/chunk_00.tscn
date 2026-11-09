@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_00_terrain.res" id="1_iro2j"]
+
+[node name="DropZoneChunk00" type="Node3D" unique_id=2098040443]
+metadata/chunk_index = 0
+metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
+
+[node name="Terrain" type="MeshInstance3D" parent="." unique_id=1955276707]
+cast_shadow = 0
+gi_mode = 0
+mesh = ExtResource("1_iro2j")
+
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=1624204125]
+bounces = 2
+shadowmask_mode = 2
+environment_mode = 3
+environment_custom_color = Color(0.44, 0.4, 0.42, 1)
+environment_custom_energy = 1.15

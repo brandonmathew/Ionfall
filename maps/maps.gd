@@ -37,6 +37,14 @@ const LIST := {
 		"gameplay": "res://maps/test_arena/gameplay.tscn",
 		"presentation": "res://maps/test_arena/presentation.tscn",
 	},
+	"drop_zone": {
+		"name": "MAP_DROP_ZONE",
+		"blurb": "MAP_DROP_ZONE_BLURB",
+		"thumb": "res://ui/maps/foundry.png",
+		"gameplay": "res://maps/drop_zone/gameplay.tscn",
+		"presentation": "res://maps/drop_zone/presentation.tscn",
+		"exposure": 1.3,  ## MapDetail: tonemap exposure (Foundry quarter's)
+	},
 }
 
 

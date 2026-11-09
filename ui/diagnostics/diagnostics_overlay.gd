@@ -91,3 +91,5 @@ func _process(delta: float) -> void:
 		_label.text += "\n" + _replay_result
 	if Diagnostics.net_info.is_valid():
 		_label.text += "\n" + str(Diagnostics.net_info.call())
+	if Diagnostics.gyro_info.is_valid():
+		_label.text += "\n" + str(Diagnostics.gyro_info.call())

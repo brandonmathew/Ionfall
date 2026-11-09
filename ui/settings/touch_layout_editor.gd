@@ -10,6 +10,7 @@ var _controls := TouchControls.new()
 var _size_slider := HSlider.new()
 var _opacity_slider := HSlider.new()
 var _hint: Label
+var _panel: PanelContainer
 
 
 func _init() -> void:
@@ -26,10 +27,14 @@ func _init() -> void:
 	_controls.editing = true
 	add_child(_controls)
 	var panel := PanelContainer.new()
+	_panel = panel
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	panel.offset_top = 24
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	add_child(panel)
+	# The panel's rect is the buttons' no-go area (TouchControls skips input
+	# inside it): refresh it whenever the panel or the viewport changes size.
+	panel.resized.connect(_refresh_edit_rect)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
@@ -78,6 +83,16 @@ func open() -> void:
 	_controls.visible = true
 	_select("")
 	visible = true
+	if not get_viewport().size_changed.is_connected(_refresh_edit_rect):
+		get_viewport().size_changed.connect(_refresh_edit_rect)
+	_refresh_edit_rect()
+
+
+## The panel's screen rect, so TouchControls knows where the panel's own
+## sliders and buttons live.
+func _refresh_edit_rect() -> void:
+	if _panel != null:
+		_controls.edit_ui_rect = _panel.get_global_rect()
 
 
 func _select(id: String) -> void:

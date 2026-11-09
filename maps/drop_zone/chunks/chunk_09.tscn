@@ -1,0 +1,85 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_slab.res" id="1_q82dw"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_cover.res" id="2_8ghow"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_wall.res" id="3_5y2fu"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_spire_glow.res" id="4_nfx4p"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_trim_cyan.res" id="5_yeo53"]
+[ext_resource type="ArrayMesh" path="res://maps/drop_zone/chunks/meshes/chunk_09_terrain.res" id="6_uy445"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Platform_DarkPlates.gltf" id="7_o0cd5"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Column_Round.gltf" id="8_wb5l3"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_Crate_Large.gltf" id="9_8w3ib"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_Barrel_Large.gltf" id="10_4c3jy"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Platform_Metal.gltf" id="11_p3v8t"]
+[ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_Crate.gltf" id="12_73fui"]
+
+[node name="DropZoneChunk09" type="Node3D" unique_id=1212080160]
+metadata/chunk_index = 9
+metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
+
+[node name="Slab" type="MeshInstance3D" parent="." unique_id=503687255]
+cast_shadow = 0
+mesh = ExtResource("1_q82dw")
+
+[node name="Cover" type="MeshInstance3D" parent="." unique_id=151095101]
+cast_shadow = 0
+mesh = ExtResource("2_8ghow")
+
+[node name="Wall" type="MeshInstance3D" parent="." unique_id=1764311988]
+cast_shadow = 0
+mesh = ExtResource("3_5y2fu")
+
+[node name="SpireGlow" type="MeshInstance3D" parent="." unique_id=70052907]
+cast_shadow = 0
+mesh = ExtResource("4_nfx4p")
+
+[node name="TrimCyan" type="MeshInstance3D" parent="." unique_id=2109319908]
+cast_shadow = 0
+mesh = ExtResource("5_yeo53")
+
+[node name="Terrain" type="MeshInstance3D" parent="." unique_id=1491675698]
+cast_shadow = 0
+gi_mode = 0
+mesh = ExtResource("6_uy445")
+
+[node name="Piece0" type="Node3D" parent="." unique_id=670764720 instance=ExtResource("7_o0cd5")]
+transform = Transform3D(2.7349353, -0.104528464, 0, 0.28745326, 0.9945219, 0, 0, 0, 3.5, -16.5, -3.4, 0)
+
+[node name="Piece1" type="Node3D" parent="." unique_id=348796263 instance=ExtResource("7_o0cd5")]
+transform = Transform3D(2.7349353, -0.104528464, 0, 0.28745326, 0.9945219, 0, 0, 0, 3.5, -5.5, -3.4, 0)
+
+[node name="Piece2" type="Node3D" parent="." unique_id=2085715419 instance=ExtResource("8_wb5l3")]
+transform = Transform3D(2, 0, 0, 0, 1.2, 0, 0, 0, 2, -16, -6, 5)
+
+[node name="Piece3" type="Node3D" parent="." unique_id=853485179 instance=ExtResource("9_8w3ib")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, -5.028551, 18)
+
+[node name="Piece4" type="Node3D" parent="." unique_id=1665966996 instance=ExtResource("10_4c3jy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -5.902716, 35)
+
+[node name="Piece5" type="Node3D" parent="." unique_id=6867884 instance=ExtResource("11_p3v8t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 0.07920383, 140)
+
+[node name="Piece6" type="Node3D" parent="." unique_id=1932881687 instance=ExtResource("12_73fui")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -79, 0.07620382, 141)
+
+[node name="Accent0" type="OmniLight3D" parent="." unique_id=1025453942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, -4, 0)
+light_color = Color(0.35, 0.9, 1, 1)
+light_energy = 3.0
+light_bake_mode = 1
+omni_range = 10.0
+
+[node name="Accent1" type="OmniLight3D" parent="." unique_id=530257816]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 2.5762038, 140)
+light_color = Color(1, 0.55, 0.2, 1)
+light_energy = 1.5
+light_bake_mode = 1
+omni_range = 6.0
+
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=1007138338]
+bounces = 2
+shadowmask_mode = 2
+environment_mode = 3
+environment_custom_color = Color(0.44, 0.4, 0.42, 1)
+environment_custom_energy = 1.15

@@ -119,6 +119,16 @@ func _ready() -> void:
 		pad_visuals.build(gameplay.jump_pads())
 	var presentation := Maps.presentation(config.map)
 	add_child(presentation)
+	if config.map == "drop_zone":
+		# BR Phase 1 test only: the Drop Zone chunk loader follows the
+		# local player. ChunkLoader exists only in the drop_zone
+		# presentation, so this is inert on every other map.
+		var loader := presentation.find_child("ChunkLoader", true, false)
+		if loader == null:
+			Log.e("match", "drop_zone presentation has no ChunkLoader — island chunks will never load")
+		else:
+			loader.player_position_callback = _drop_zone_player_position
+			Log.i("match", "chunk loader wired to the local player")
 	_apply_shadows(presentation)
 	Settings.apply_environment(presentation)
 	var map_tier := [MeshyRig.current_tier()]  ## boxed: the lambda below updates it
@@ -154,6 +164,7 @@ func _ready() -> void:
 		MatchPreload.release()
 	get_tree().root.get_window().focus_exited.connect(_on_focus_lost)
 	Diagnostics.net_info = _net_info
+	Diagnostics.gyro_info = input.gyro_status
 	if Platform.user_args.has("--aa-bench"):  # dev: MSAA vs FXAA on the device (AaBench)
 		add_child(AaBench.new())
 	if Platform.user_args.has("--adpf"):  # ADPF spike (docs/decisions/0004-thermals-adpf.md)
@@ -217,6 +228,14 @@ func _ready() -> void:
 		server.max_combatants = config.max_combatants()
 		# The host's bots stay as players join; a spectator's place goes to one more.
 		server.bot_count = config.bots + (1 if config.spectate else 0)
+		if config.br_phase1_test:
+			# BR Phase 1 ground-truth test: 50 combatants on drop_zone with
+			# the bot-distance rings, diagnostics overlay up from the start.
+			server.max_combatants = MatchConfig.BR_PHASE1_TEST_COMBATANTS
+			server.bot_count = MatchConfig.BR_PHASE1_TEST_COMBATANTS - 1
+			if "rings_enabled" in server:  # rings workstream lands separately
+				server.rings_enabled = true
+			Diagnostics.show_overlay()
 		server.lobby_after_match = config.from_lobby
 		server.team_plan = config.team_plan
 		server.team_names = config.team_names
@@ -256,6 +275,8 @@ func _exit_tree() -> void:
 		Online.stop_hosting()
 	if Diagnostics.net_info == _net_info:
 		Diagnostics.net_info = Callable()
+	if Diagnostics.gyro_info == input.gyro_status:
+		Diagnostics.gyro_info = Callable()
 
 
 ## Creates the ClientSession and starts joining. `token` != 0 reconnects as
@@ -461,6 +482,18 @@ func local_id() -> int:
 	if spectating():
 		return _spec_target
 	return client.local_id if client != null else ServerSession.LOCAL_PLAYER_ID
+
+
+## BR Phase 1 test only: where the local player is for the Drop Zone
+## chunk loader (Vector3.INF while there is no local player yet; a
+## spectator has none, so the loader falls back to the island centre).
+func _drop_zone_player_position() -> Vector3:
+	if server != null:
+		var p: SimPlayer = server.world.get_player(ServerSession.LOCAL_PLAYER_ID)
+		return p.state.position if p != null else Vector3.INF
+	if client != null and client.pred != null:
+		return client.pred.state.position
+	return Vector3.INF
 
 
 func spectating() -> bool:

@@ -46,6 +46,10 @@ var team_colors := GameMode.DEFAULT_TEAM_COLORS
 ## Watch instead of playing (spectator mode): OFFLINE, the bots only; JOIN,
 ## as a network spectator (no player, every combatant seen remotely).
 var spectate: bool = false
+## BR Phase 1 ground-truth test (PLAN): 50 combatants in a deathmatch on
+## drop_zone with the bot-distance rings. Test-only: bypasses the phone/PC
+## host caps; every normal match keeps its caps.
+var br_phase1_test: bool = false
 
 
 ## The rejoin offer if it is still open, else {}.
@@ -60,6 +64,8 @@ static func open_rejoin() -> Dictionary:
 const PHONE_HOST_CAP := 4
 const PC_HOST_CAP := 16
 const PC_ONLINE_HOST_CAP := 8
+## BR Phase 1 test match: 1 player + 49 bots (PLAN).
+const BR_PHASE1_TEST_COMBATANTS := 50
 
 
 ## The bot counts this match can take: any number from 1 (0 in a lobby,
@@ -69,6 +75,8 @@ func max_bots() -> int:
 
 
 func clamp_bots(n: int, allow_none: bool) -> int:
+	if br_phase1_test:  # test-only bypass of the host caps, still capped at 49
+		return clampi(n, 0 if allow_none else 1, BR_PHASE1_TEST_COMBATANTS - 1)
 	if Platform.get_user_arg("--bots").is_valid_int():  # dev launches keep their exact count
 		return n
 	return clampi(n, 0 if allow_none else 1, max_bots())
@@ -86,6 +94,8 @@ static func profile_bots() -> int:
 
 
 func max_combatants() -> int:
+	if br_phase1_test:  # BR Phase 1 test: 50, regardless of phone/PC caps
+		return BR_PHASE1_TEST_COMBATANTS
 	if Platform.get_user_arg("--host-cap").is_valid_int():  # dev: host tests
 		return clampi(Platform.get_user_arg("--host-cap").to_int(), 2, Protocol.MAX_PEERS)
 	if Platform.is_mobile():
