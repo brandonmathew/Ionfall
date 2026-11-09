@@ -12,31 +12,31 @@
 [ext_resource type="PackedScene" path="res://art/environment/scifi/Platform_Metal.gltf" id="10_mqk66"]
 [ext_resource type="PackedScene" path="res://art/environment/scifi/Prop_SatelliteDish.gltf" id="11_m2kxp"]
 
-[node name="DropZoneChunk05" type="Node3D" unique_id=1533283451]
+[node name="DropZoneChunk05" type="Node3D" unique_id=970613236]
 metadata/chunk_index = 5
 metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
 
-[node name="Cover" type="MeshInstance3D" parent="." unique_id=2147459520]
+[node name="Cover" type="MeshInstance3D" parent="." unique_id=1979671862]
 cast_shadow = 0
 mesh = ExtResource("1_nng7x")
 
-[node name="Wall" type="MeshInstance3D" parent="." unique_id=1740748153]
+[node name="Wall" type="MeshInstance3D" parent="." unique_id=845906314]
 cast_shadow = 0
 mesh = ExtResource("2_d8tl2")
 
-[node name="Slab" type="MeshInstance3D" parent="." unique_id=1048169667]
+[node name="Slab" type="MeshInstance3D" parent="." unique_id=515841208]
 cast_shadow = 0
 mesh = ExtResource("3_t43bc")
 
-[node name="SpireGlow" type="MeshInstance3D" parent="." unique_id=1337585809]
+[node name="SpireGlow" type="MeshInstance3D" parent="." unique_id=907389647]
 cast_shadow = 0
 mesh = ExtResource("4_l0flw")
 
-[node name="TrimCyan" type="MeshInstance3D" parent="." unique_id=239262178]
+[node name="TrimCyan" type="MeshInstance3D" parent="." unique_id=1681448406]
 cast_shadow = 0
 mesh = ExtResource("5_wek7s")
 
-[node name="Terrain" type="MeshInstance3D" parent="." unique_id=590091391]
+[node name="Terrain" type="MeshInstance3D" parent="." unique_id=1377831544]
 cast_shadow = 0
 gi_mode = 0
 mesh = ExtResource("6_8ihr7")
@@ -53,43 +53,43 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -6.514984, -28)
 [node name="Piece3" type="Node3D" parent="." unique_id=6867884 instance=ExtResource("10_mqk66")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 0.003, -120)
 
-[node name="Piece4" type="Node3D" parent="." unique_id=384678958 instance=ExtResource("8_lj5nl")]
+[node name="Piece4" type="Node3D" parent="." unique_id=1286689118 instance=ExtResource("8_lj5nl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -199, 0, -119)
 
-[node name="Piece5" type="Node3D" parent="." unique_id=1037973598 instance=ExtResource("7_tajf1")]
+[node name="Piece5" type="Node3D" parent="." unique_id=1064584777 instance=ExtResource("7_tajf1")]
 transform = Transform3D(0.8, 0, 0, 0, 1.2, 0, 0, 0, 0.8, -80, 0.07620382, -140)
 
 [node name="Piece6" type="Node3D" parent="." unique_id=1905278578 instance=ExtResource("11_m2kxp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -78.5, 0.07620382, -140)
 
-[node name="Piece7" type="Node3D" parent="." unique_id=1220447258 instance=ExtResource("10_mqk66")]
+[node name="Piece7" type="Node3D" parent="." unique_id=2132631435 instance=ExtResource("10_mqk66")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140, 0.07920383, -80)
 
-[node name="Piece8" type="Node3D" parent="." unique_id=2109976453 instance=ExtResource("8_lj5nl")]
+[node name="Piece8" type="Node3D" parent="." unique_id=218133371 instance=ExtResource("8_lj5nl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -139, 0.07620382, -79)
 
-[node name="Accent0" type="OmniLight3D" parent="." unique_id=1646969269]
+[node name="Accent0" type="OmniLight3D" parent="." unique_id=749423527]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 2.5, -120)
 light_color = Color(1, 0.55, 0.2, 1)
 light_energy = 1.5
 light_bake_mode = 1
 omni_range = 6.0
 
-[node name="Accent1" type="OmniLight3D" parent="." unique_id=945762326]
+[node name="Accent1" type="OmniLight3D" parent="." unique_id=880850775]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 5.076204, -140)
 light_color = Color(0.35, 0.9, 1, 1)
 light_energy = 2.0
 light_bake_mode = 1
 omni_range = 7.0
 
-[node name="Accent2" type="OmniLight3D" parent="." unique_id=685482757]
+[node name="Accent2" type="OmniLight3D" parent="." unique_id=165561932]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140, 2.5762038, -80)
 light_color = Color(1, 0.55, 0.2, 1)
 light_energy = 1.5
 light_bake_mode = 1
 omni_range = 6.0
 
-[node name="LightmapGI" type="LightmapGI" parent="." unique_id=2110755984]
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=1237988512]
 bounces = 2
 shadowmask_mode = 2
 environment_mode = 3

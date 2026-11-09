@@ -204,6 +204,12 @@ func _save_mesh(root: Node3D, node_name: String, mesh: ArrayMesh, path: String) 
 ## lightmap unwrap: at 0.2 m texels a 200 × 200 m patch would need a
 ## ~1000 × 1000 lightmap of its own, so the terrain stays dynamically
 ## lit (gi_mode DISABLED, set by the caller) under the sun.
+## Normals are analytic (the heightfield gradient), NOT
+## SurfaceTool.generate_normals(): in Godot 4.7 generate_normals()
+## returns normals OPPOSITE to the winding — the 1.0.8 terrain shipped
+## with all 441 normals pointing down, so the sun (above) lit nothing
+## and the ground read as the red sky. The winding stays up (front
+## faces up, CULL_BACK); the normals now point up too.
 func _terrain_mesh(idx: int) -> ArrayMesh:
 	var rect := DropZoneLayout.chunk_rect(idx)
 	var st := SurfaceTool.new()
@@ -217,17 +223,31 @@ func _terrain_mesh(idx: int) -> ArrayMesh:
 			var b := Vector3(x0 + 10.0, DropZoneLayout.ground_height(x0 + 10.0, z0), z0)
 			var c := Vector3(x0, DropZoneLayout.ground_height(x0, z0 + 10.0), z0 + 10.0)
 			var d := Vector3(x0 + 10.0, DropZoneLayout.ground_height(x0 + 10.0, z0 + 10.0), z0 + 10.0)
+			st.set_normal(_terrain_normal(a.x, a.z))
 			st.add_vertex(a)
+			st.set_normal(_terrain_normal(c.x, c.z))
 			st.add_vertex(c)
+			st.set_normal(_terrain_normal(b.x, b.z))
 			st.add_vertex(b)
+			st.set_normal(_terrain_normal(b.x, b.z))
 			st.add_vertex(b)
+			st.set_normal(_terrain_normal(c.x, c.z))
 			st.add_vertex(c)
+			st.set_normal(_terrain_normal(d.x, d.z))
 			st.add_vertex(d)
 	st.index()
-	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, _terrain_material())
 	return MapMaterials.converted(mesh)
+
+
+## Up-facing normal of the heightfield at (x, z), from the gradient of
+## ground_height() (central differences on the 10 m grid step).
+func _terrain_normal(x: float, z: float) -> Vector3:
+	var e := 10.0
+	var dx := (DropZoneLayout.ground_height(x + e, z) - DropZoneLayout.ground_height(x - e, z)) / (2.0 * e)
+	var dz := (DropZoneLayout.ground_height(x, z + e) - DropZoneLayout.ground_height(x, z - e)) / (2.0 * e)
+	return Vector3(-dx, 1.0, -dz).normalized()
 
 
 func _kit_scene(model: String) -> PackedScene:

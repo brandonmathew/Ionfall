@@ -66,7 +66,7 @@ size = Vector3(200, 6, 200)
 material = SubResource("StandardMaterial3D_ga27l")
 size = Vector3(100, 4, 100)
 
-[node name="DropZonePresentation" type="Node3D" unique_id=1380489778]
+[node name="DropZonePresentation" type="Node3D" unique_id=1536969274]
 metadata/layout_hash = "b60fcde4e11e299d782c2eca71b32e806e62031cf69f53bdab2d5c16aa1c7e2c"
 metadata/grade = {
 "contrast": 0.18,
@@ -74,10 +74,10 @@ metadata/grade = {
 "shadows": Color(0.02, 0, 0.03, 1)
 }
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1230241648]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1580764180]
 environment = SubResource("Environment_w1k1y")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1601196630]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=673180405]
 transform = Transform3D(0.49999997, -0.5331785, 0.68243736, 0, 0.7880108, 0.6156615, -0.86602545, -0.30783072, 0.39400536, 0, 0, 0)
 light_color = Color(1, 0.84, 0.68, 1)
 light_energy = 1.45
@@ -94,58 +94,58 @@ metadata/grade = {
 "shadows": Color(0.02, 0, 0.03, 1)
 }
 
-[node name="Silhouette_DockingPort" type="MeshInstance3D" parent="." unique_id=1940751830]
+[node name="Silhouette_DockingPort" type="MeshInstance3D" parent="." unique_id=466120877]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, -260)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_88v5i")
 
-[node name="Silhouette_HalcyonSpire" type="MeshInstance3D" parent="." unique_id=1508740107]
+[node name="Silhouette_HalcyonSpire" type="MeshInstance3D" parent="." unique_id=178283004]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 185, 22.5, -185)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_cbikg")
 
-[node name="Silhouette_VesperFoundry" type="MeshInstance3D" parent="." unique_id=374224798]
+[node name="Silhouette_VesperFoundry" type="MeshInstance3D" parent="." unique_id=1195140187]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 250, 0.5, 0)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_ptyi3")
 
-[node name="Silhouette_HydroDomes" type="MeshInstance3D" parent="." unique_id=1279837678]
+[node name="Silhouette_HydroDomes" type="MeshInstance3D" parent="." unique_id=512926182]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 185, 5, 185)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_tpucl")
 
-[node name="Silhouette_SolarFlats" type="MeshInstance3D" parent="." unique_id=471641514]
+[node name="Silhouette_SolarFlats" type="MeshInstance3D" parent="." unique_id=1816010601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 260)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_fac4c")
 
-[node name="Silhouette_TheRidge" type="MeshInstance3D" parent="." unique_id=341224808]
+[node name="Silhouette_TheRidge" type="MeshInstance3D" parent="." unique_id=1950801820]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -260, 9, 0)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_wxfru")
 
-[node name="Silhouette_CraterRim" type="MeshInstance3D" parent="." unique_id=1824633431]
+[node name="Silhouette_CraterRim" type="MeshInstance3D" parent="." unique_id=1266246148]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_kqqx2")
 
-[node name="Silhouette_Scattersites" type="MeshInstance3D" parent="." unique_id=1642038553]
+[node name="Silhouette_Scattersites" type="MeshInstance3D" parent="." unique_id=1910654583]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -185, 2, 185)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("BoxMesh_nhntj")
 
-[node name="ChunkLoader" type="Node" parent="." unique_id=1735425261]
+[node name="ChunkLoader" type="Node" parent="." unique_id=93832836]
 script = ExtResource("3_h4d6m")
 
-[node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=957746349]
+[node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=898693456]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 22.5, 0)
 max_distance = 826.4708
 size = Vector3(578, 46, 591)
